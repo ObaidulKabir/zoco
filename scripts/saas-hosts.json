@@ -1,0 +1,23 @@
+[
+  "sentry.io",
+  "ingest.sentry.io",
+  "api.openai.com",
+  "openai.com",
+  "api-free.deepl.com",
+  "deepl.com",
+  "sendgrid.com",
+  "stripe.com",
+  "firebase.google",
+  "fcm.googleapis",
+  "amazonaws.com",
+  "twilio.com",
+  "mailgun.org",
+  "postmarkapp.com",
+  "algolia.net",
+  "pusher.com",
+  "segment.io",
+  "mixpanel.com",
+  "datadoghq.com",
+  "newrelic.com",
+  "honeycomb.io"
+]

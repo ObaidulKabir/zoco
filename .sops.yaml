@@ -1,0 +1,6 @@
+# SOPS + age — encrypt secrets at rest in git (Sprint 0 placeholder).
+# Generate a key: age-keygen -o keys/age.txt  (do not commit the private key)
+creation_rules:
+  - path_regex: secrets/.*\.enc\.ya?ml$
+    age: >-
+      CHANGE_ME_PUBLIC_KEY

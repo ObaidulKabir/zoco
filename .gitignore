@@ -1,0 +1,17 @@
+node_modules
+dist
+.next
+coverage
+*.tsbuildinfo
+*.log
+.env
+.env.local
+.turbo
+playwright-report
+test-results
+infra/compose/data
+*.age
+!*.age.example
+.DS_Store
+Thumbs.db
+_boundary_probe.ts
