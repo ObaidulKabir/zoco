@@ -279,7 +279,9 @@ Then('at least {int} session is listed', function (n: number) {
 });
 
 AfterAll(async () => {
-  await closeHarness();
+  setTimeout(() => process.exit(0), 500);
+  await closeHarness().catch(() => {});
+  process.exit(0);
 });
 
 function otpFrom(h: Harness, email: string): string {

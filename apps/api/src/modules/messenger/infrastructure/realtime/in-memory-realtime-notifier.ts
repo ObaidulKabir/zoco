@@ -91,6 +91,27 @@ export class InMemoryRealtimeNotifier implements RealtimeNotifierPort {
     });
   }
 
+  async notifyChannelMessage(channelId: string, message: any, recipientUserIds: string[]): Promise<void> {
+    this.emittedEvents.push({
+      event: 'channel:message',
+      conversationId: channelId,
+      recipientUserIds,
+      payload: message,
+      timestamp: new Date(),
+    });
+  }
+
+  async notifyChannelMention(orgId: string, channelId: string, messageId: string, mentionType: string, recipientUserIds: string[]): Promise<void> {
+    this.emittedEvents.push({
+      event: 'channel:mention',
+      orgId,
+      conversationId: channelId,
+      recipientUserIds,
+      payload: { messageId, mentionType },
+      timestamp: new Date(),
+    });
+  }
+
   clear(): void {
     this.emittedEvents = [];
   }

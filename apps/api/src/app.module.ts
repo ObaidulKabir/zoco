@@ -5,10 +5,18 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { AuthExceptionFilter } from './modules/identity/infrastructure/http/auth-exception.filter';
 import { OrgModule } from './modules/org/org.module';
 import { MessengerModule } from './modules/messenger/messenger.module';
+import { ChannelsModule } from './modules/channels/channels.module';
+import { MediaModule } from './modules/media/media.module';
 import { requestIdMiddleware } from './request-id';
 
 @Module({
-  imports: [IdentityModule, OrgModule, MessengerModule],
+  imports: [
+    IdentityModule,
+    OrgModule,
+    MessengerModule,
+    ChannelsModule.register(),
+    MediaModule.register(),
+  ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: AuthExceptionFilter }],
 })

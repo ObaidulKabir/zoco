@@ -2372,6 +2372,282 @@
           "Messenger"
         ]
       }
+    },
+    "/v1/channels": {
+      "get": {
+        "operationId": "ChannelController_listChannels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Channels list"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List channels in organization",
+        "tags": [
+          "Channels"
+        ]
+      },
+      "post": {
+        "operationId": "ChannelController_createChannel",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Channel created"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new public, private, or announcement channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/{channelSlug}/join": {
+      "post": {
+        "operationId": "ChannelController_joinChannel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Joined channel"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Join a public channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/{channelSlug}/leave": {
+      "post": {
+        "operationId": "ChannelController_leaveChannel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Left channel"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Leave a channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/{channelSlug}/members": {
+      "post": {
+        "operationId": "ChannelController_inviteMember",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Member invited"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite a member to a channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/{channelSlug}/messages": {
+      "get": {
+        "operationId": "ChannelController_getMessages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Messages list"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get channel message history",
+        "tags": [
+          "Channels"
+        ]
+      },
+      "post": {
+        "operationId": "ChannelController_sendMessage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Message sent"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a message to a channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/messages/{messageId}/threads": {
+      "get": {
+        "operationId": "ChannelController_getThreadMessages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Thread message list"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get thread messages for a root message",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/{channelSlug}/archive": {
+      "post": {
+        "operationId": "ChannelController_archiveChannel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Channel archived"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Archive a channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/shared": {
+      "post": {
+        "operationId": "ChannelController_createSharedChannel",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Shared channel created"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a shared B2B channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/channels/shared/{channelId}/accept": {
+      "post": {
+        "operationId": "ChannelController_acceptSharedChannel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Shared channel accepted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept invitation to a shared B2B channel",
+        "tags": [
+          "Channels"
+        ]
+      }
+    },
+    "/v1/media/upload-url": {
+      "post": {
+        "operationId": "MediaController_requestUploadUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Pre-signed upload URL generated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request pre-signed upload URL for S3/MinIO",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/v1/media/confirm": {
+      "post": {
+        "operationId": "MediaController_confirmUpload",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Upload confirmed and scan completed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm upload and trigger anti-malware virus scan",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/v1/media/{fileId}/download-url": {
+      "get": {
+        "operationId": "MediaController_getDownloadUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Download URL generated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get secure pre-signed download URL for a clean file",
+        "tags": [
+          "Media"
+        ]
+      }
     }
   },
   "info": {

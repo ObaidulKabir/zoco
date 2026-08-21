@@ -4,5 +4,6 @@ module.exports = {
     require: ['tests/bdd/steps/**/*.ts'],
     paths: ['../../features/**/*.feature'],
     format: ['progress', 'json:reports/cucumber.json'],
+    forceExit: true,
   },
 };

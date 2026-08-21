@@ -20,6 +20,12 @@ import { ORG_DIRECTORY } from '../../src/modules/org/org.tokens';
 import { InMemoryMessengerStore } from '../../src/modules/messenger/infrastructure/persistence/in-memory-messenger-store';
 import { InMemoryRealtimeNotifier } from '../../src/modules/messenger/infrastructure/realtime/in-memory-realtime-notifier';
 import { MESSENGER_STORE, REALTIME_NOTIFIER } from '../../src/modules/messenger/messenger.tokens';
+import { InMemoryChannelStore } from '../../src/modules/channels/infrastructure/persistence/in-memory-channel-store';
+import { CHANNEL_STORE } from '../../src/modules/channels/channels.tokens';
+import { InMemoryMediaStore } from '../../src/modules/media/infrastructure/persistence/in-memory-media-store';
+import { InMemoryStorageAdapter } from '../../src/modules/media/infrastructure/storage/in-memory-storage.adapter';
+import { InMemoryScannerAdapter } from '../../src/modules/media/infrastructure/scanner/in-memory-scanner.adapter';
+import { MEDIA_STORE, STORAGE_ADAPTER, VIRUS_SCANNER } from '../../src/modules/media/media.tokens';
 
 export type Harness = {
   app: INestApplication;
@@ -31,6 +37,10 @@ export type Harness = {
   invitations: InMemoryInvitationRegistry;
   messenger: InMemoryMessengerStore;
   notifier: InMemoryRealtimeNotifier;
+  channels: InMemoryChannelStore;
+  media: InMemoryMediaStore;
+  storage: InMemoryStorageAdapter;
+  scanner: InMemoryScannerAdapter;
   rateLimiter: AuthRateLimiter;
 };
 
@@ -64,28 +74,40 @@ export const getHarness = async (): Promise<Harness> => {
     invitations: moduleRef.get<InMemoryInvitationRegistry>(INVITATION_REGISTRY),
     messenger: moduleRef.get<InMemoryMessengerStore>(MESSENGER_STORE),
     notifier: moduleRef.get<InMemoryRealtimeNotifier>(REALTIME_NOTIFIER),
+    channels: moduleRef.get<InMemoryChannelStore>(CHANNEL_STORE),
+    media: moduleRef.get<InMemoryMediaStore>(MEDIA_STORE),
+    storage: moduleRef.get<InMemoryStorageAdapter>(STORAGE_ADAPTER),
+    scanner: moduleRef.get<InMemoryScannerAdapter>(VIRUS_SCANNER),
     rateLimiter: moduleRef.get(AuthRateLimiter),
   };
   return harness;
 };
 
 export const resetHarness = async (): Promise<Harness> => {
+  process.env.AUTH_RATE_LIMIT = RELAXED_AUTH_RATE_LIMIT;
   const h = await getHarness();
   await h.users.clear();
   await h.sessions.clear();
   await h.orgs.clear();
   await h.invitations.clear();
-  h.messenger.clear();
-  h.notifier.clear();
-  h.audit.clear();
-  h.mailer.sent.length = 0;
+  await h.messenger.clear();
+  await h.notifier.clear();
+  await h.audit.clear();
+  await h.channels.clear();
+  await h.media.clear();
   h.rateLimiter.clear();
-  process.env.AUTH_RATE_LIMIT = RELAXED_AUTH_RATE_LIMIT;
   return h;
 };
 
 export const closeHarness = async (): Promise<void> => {
-  if (!harness) return;
-  await harness.app.close();
-  harness = null;
+  if (harness) {
+    try {
+      const server = harness.app.getHttpServer();
+      if (server && typeof server.close === 'function') {
+        server.close();
+      }
+      await harness.app.close();
+    } catch {}
+    harness = null;
+  }
 };

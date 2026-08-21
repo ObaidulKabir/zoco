@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { InMemoryObjectStorage, type MailerPort, type ObjectStoragePort } from '@zoqo/shared';
 import { isPostgresEnabled } from '../../db/pool';
 import { IdentityModule } from '../identity/identity.module';
@@ -36,6 +36,7 @@ import { InMemoryOrgDirectory } from './infrastructure/persistence/in-memory-org
 import { PgOrgDirectory } from './infrastructure/persistence/pg-org-directory';
 import { OBJECT_STORAGE, ORG_DIRECTORY } from './org.tokens';
 
+@Global()
 @Module({
   imports: [IdentityModule],
   controllers: [OrgController],

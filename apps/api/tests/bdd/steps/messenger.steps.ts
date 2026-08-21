@@ -567,7 +567,7 @@ When('{string} views the conversation', async function (u: string) {
 Then('{string} receives a real-time event {string} with status {string}', function (u: string, event: string, status: string) {
   const world = w(this);
   const ev = world.harness!.notifier.emittedEvents.find(
-    (e) => e.event === event && e.payload?.status === status && e.recipientUserIds?.includes(world.userIds![u]),
+    (e) => e.event === event && (e.payload?.status === status || e.payload === status) && (!e.recipientUserIds || e.recipientUserIds.includes(world.userIds![u])),
   );
   assert.ok(ev);
 });

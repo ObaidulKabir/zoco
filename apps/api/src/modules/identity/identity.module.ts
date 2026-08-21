@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { InMemoryMailer, type MailerPort } from '@zoqo/shared';
 import { isPostgresEnabled } from '../../db/pool';
 import { ListUsersUseCase } from './application/list-users.usecase';
@@ -42,6 +42,7 @@ import { LocalIdentityProvider } from './infrastructure/security/local-identity-
 const mailerFactory = (): MailerPort =>
   process.env.MAILER_DRIVER === 'smtp' ? new SmtpMailer() : new InMemoryMailer();
 
+@Global()
 @Module({
   controllers: [IdentityController, AuthController],
   providers: [
