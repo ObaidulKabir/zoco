@@ -33,6 +33,8 @@ export default function OrgHome() {
       <p>
         <Link href="/orgs">Switch organization</Link>
         {' · '}
+        <Link href={`/orgs/${orgId}/messages`}>Direct Messages</Link>
+        {' · '}
         <Link href={`/orgs/${orgId}/invite`}>Invite</Link>
         {' · '}
         <Link href={`/orgs/${orgId}/settings`}>Settings</Link>

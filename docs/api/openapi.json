@@ -2136,6 +2136,242 @@
           "org"
         ]
       }
+    },
+    "/v1/messenger/conversations/dm": {
+      "post": {
+        "operationId": "MessengerController_startDm",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Direct message conversation created or retrieved"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start or get an existing 1:1 direct message conversation",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/conversations": {
+      "get": {
+        "operationId": "MessengerController_listConversations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of conversations"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List active conversations for the current user",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/conversations/{convId}/messages": {
+      "get": {
+        "operationId": "MessengerController_getMessages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of messages"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated messages for a conversation",
+        "tags": [
+          "Messenger"
+        ]
+      },
+      "post": {
+        "operationId": "MessengerController_sendMessage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Message sent successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send an encrypted direct message",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/messages/{msgId}": {
+      "patch": {
+        "operationId": "MessengerController_editMessage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Message edited successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit message content within 15 minutes window",
+        "tags": [
+          "Messenger"
+        ]
+      },
+      "delete": {
+        "operationId": "MessengerController_deleteMessage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Message soft deleted"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft delete a message",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/messages/{msgId}/reactions": {
+      "post": {
+        "operationId": "MessengerController_addReaction",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Reaction added"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add an emoji reaction to a message",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/messages/{msgId}/reactions/{emoji}": {
+      "delete": {
+        "operationId": "MessengerController_removeReaction",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Reaction removed"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove an emoji reaction from a message",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/messages/{msgId}/pin": {
+      "post": {
+        "operationId": "MessengerController_pinMessage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Message pin status updated"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pin or unpin a message (Manager+)",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/conversations/{convId}/messages/{msgId}/read": {
+      "post": {
+        "operationId": "MessengerController_markRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Message marked as read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a message as read and update read receipt",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/keys/prekeys": {
+      "post": {
+        "operationId": "MessengerController_registerPrekeys",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Prekey bundle registered"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish user X3DH prekey bundle",
+        "tags": [
+          "Messenger"
+        ]
+      }
+    },
+    "/v1/messenger/keys/prekeys/{userId}": {
+      "get": {
+        "operationId": "MessengerController_getPrekeys",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Target user prekey bundle"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fetch X3DH prekey bundle for a target user (consumes 1 OTPK)",
+        "tags": [
+          "Messenger"
+        ]
+      }
     }
   },
   "info": {

@@ -17,6 +17,9 @@ import {
 } from '../../src/modules/identity/identity.tokens';
 import { InMemoryOrgDirectory } from '../../src/modules/org/infrastructure/persistence/in-memory-org-directory';
 import { ORG_DIRECTORY } from '../../src/modules/org/org.tokens';
+import { InMemoryMessengerStore } from '../../src/modules/messenger/infrastructure/persistence/in-memory-messenger-store';
+import { InMemoryRealtimeNotifier } from '../../src/modules/messenger/infrastructure/realtime/in-memory-realtime-notifier';
+import { MESSENGER_STORE, REALTIME_NOTIFIER } from '../../src/modules/messenger/messenger.tokens';
 
 export type Harness = {
   app: INestApplication;
@@ -26,6 +29,8 @@ export type Harness = {
   audit: InMemoryAudit;
   orgs: InMemoryOrgDirectory;
   invitations: InMemoryInvitationRegistry;
+  messenger: InMemoryMessengerStore;
+  notifier: InMemoryRealtimeNotifier;
   rateLimiter: AuthRateLimiter;
 };
 
@@ -57,6 +62,8 @@ export const getHarness = async (): Promise<Harness> => {
     audit: moduleRef.get<InMemoryAudit>(AUDIT),
     orgs: moduleRef.get<InMemoryOrgDirectory>(ORG_DIRECTORY),
     invitations: moduleRef.get<InMemoryInvitationRegistry>(INVITATION_REGISTRY),
+    messenger: moduleRef.get<InMemoryMessengerStore>(MESSENGER_STORE),
+    notifier: moduleRef.get<InMemoryRealtimeNotifier>(REALTIME_NOTIFIER),
     rateLimiter: moduleRef.get(AuthRateLimiter),
   };
   return harness;
@@ -68,6 +75,8 @@ export const resetHarness = async (): Promise<Harness> => {
   await h.sessions.clear();
   await h.orgs.clear();
   await h.invitations.clear();
+  h.messenger.clear();
+  h.notifier.clear();
   h.audit.clear();
   h.mailer.sent.length = 0;
   h.rateLimiter.clear();

@@ -1,0 +1,2 @@
+export const MESSENGER_STORE = Symbol('MESSENGER_STORE');
+export const REALTIME_NOTIFIER = Symbol('REALTIME_NOTIFIER');

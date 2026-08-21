@@ -4,10 +4,11 @@ import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { AuthExceptionFilter } from './modules/identity/infrastructure/http/auth-exception.filter';
 import { OrgModule } from './modules/org/org.module';
+import { MessengerModule } from './modules/messenger/messenger.module';
 import { requestIdMiddleware } from './request-id';
 
 @Module({
-  imports: [IdentityModule, OrgModule],
+  imports: [IdentityModule, OrgModule, MessengerModule],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: AuthExceptionFilter }],
 })
