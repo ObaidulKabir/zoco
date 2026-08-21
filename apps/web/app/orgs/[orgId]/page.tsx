@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AuthShell, loadAccess, storeOrg, useAuthApi } from '../../auth-ui';
 
@@ -10,18 +11,21 @@ type OrgPayload = {
   departments: Array<{ name: string }>;
 };
 
-export default function OrgHome({ params }: { params: { orgId: string } }) {
+export default function OrgHome() {
+  // Read through the hook rather than the params prop: as of Next 15 that prop
+  // is a promise, and unwrapping it with use() would require React 19.
+  const { orgId } = useParams<{ orgId: string }>();
   const { error, send } = useAuthApi();
   const [data, setData] = useState<OrgPayload | null>(null);
 
   useEffect(() => {
-    storeOrg(params.orgId);
+    storeOrg(orgId);
     void (async () => {
-      const json = await send(`/v1/orgs/${params.orgId}`, undefined, loadAccess(), 'GET');
+      const json = await send(`/v1/orgs/${orgId}`, undefined, loadAccess(), 'GET');
       if (json?.data) setData(json.data as OrgPayload);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.orgId]);
+  }, [orgId]);
 
   return (
     <AuthShell title={data?.organization.name ?? 'Organization'}>
@@ -29,11 +33,11 @@ export default function OrgHome({ params }: { params: { orgId: string } }) {
       <p>
         <Link href="/orgs">Switch organization</Link>
         {' · '}
-        <Link href={`/orgs/${params.orgId}/invite`}>Invite</Link>
+        <Link href={`/orgs/${orgId}/invite`}>Invite</Link>
         {' · '}
-        <Link href={`/orgs/${params.orgId}/settings`}>Settings</Link>
+        <Link href={`/orgs/${orgId}/settings`}>Settings</Link>
         {' · '}
-        <Link href={`/orgs/${params.orgId}/profile`}>Profile</Link>
+        <Link href={`/orgs/${orgId}/profile`}>Profile</Link>
       </p>
       <h2>Channels</h2>
       <ul>

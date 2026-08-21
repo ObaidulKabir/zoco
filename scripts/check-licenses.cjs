@@ -14,7 +14,12 @@ const allowed = new Set(
     .filter(Boolean),
 );
 
-const banned = /gpl|agpl|sspl|busl|commons clause|elastic-2/i;
+// GPL and AGPL are refused; LGPL is not. The lookbehind is what separates them,
+// because a plain /gpl/ also matches the L in LGPL. That distinction matters:
+// LGPL permits use of an unmodified library without imposing its terms on the
+// calling code, which GPL does not. libvips arrives this way, under sharp,
+// which Next 15 pulls in for image optimisation the app never uses.
+const banned = /(?<!l)gpl|sspl|busl|commons clause|elastic-2/i;
 
 function normalize(raw) {
   return String(raw || 'UNKNOWN')

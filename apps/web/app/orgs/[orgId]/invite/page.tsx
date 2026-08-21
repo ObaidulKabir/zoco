@@ -1,14 +1,17 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { AuthShell, Field, loadAccess, storeOrg, useAuthApi } from '../../../auth-ui';
 import { Button } from '@zoqo/ui';
 
-export default function InvitePage({ params }: { params: { orgId: string } }) {
+export default function InvitePage() {
+  // See the note in app/orgs/[orgId]/page.tsx on why this is a hook.
+  const { orgId } = useParams<{ orgId: string }>();
   const { error, busy, send } = useAuthApi();
   const [emails, setEmails] = useState('');
   const [done, setDone] = useState('');
-  storeOrg(params.orgId);
+  storeOrg(orgId);
 
   return (
     <AuthShell title="Invite members">
@@ -16,7 +19,7 @@ export default function InvitePage({ params }: { params: { orgId: string } }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const json = await send(
-            `/v1/orgs/${params.orgId}/invite`,
+            `/v1/orgs/${orgId}/invite`,
             { emails: emails.split(/[,\s]+/).filter(Boolean), role: 'member' },
             loadAccess(),
           );

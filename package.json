@@ -33,6 +33,16 @@
   },
   "pnpm": {
     "// neverBuiltDependencies": "swagger-ui-dist pulls @scarf/scarf, whose postinstall reports telemetry. Nothing in this project phones home.",
-    "neverBuiltDependencies": ["@scarf/scarf"]
+    "neverBuiltDependencies": ["@scarf/scarf"],
+    "// overrides": "High-severity advisories in transitive dependencies whose parents have not released a fixed version. Each selector is bounded below at the current major so it cannot drag an unrelated older major forward -- a bare 'glob@<10.5.0' would also match glob@7 and hand its consumers a breaking upgrade. Drop an entry once the parent bumps it, and re-run `pnpm audit --audit-level high` after.",
+    "overrides": {
+      "multer@>=2.0.0 <2.2.0": "^2.2.0",
+      "js-yaml@>=4.0.0 <4.3.1": "^4.3.1",
+      "lodash@>=4.0.0 <4.18.1": "^4.18.1",
+      "postcss@>=8.0.0 <8.5.18": "^8.5.18",
+      "sharp@>=0.34.0 <0.35.0": "^0.35.3",
+      "glob@>=10.0.0 <10.5.0": "^10.5.0",
+      "tmp@>=0.2.0 <0.2.6": "^0.2.6"
+    }
   }
 }

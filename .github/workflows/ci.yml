@@ -91,8 +91,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Dependency audit (SYS-SEC-010)
         run: pnpm audit --audit-level high
+      # Pinned to a commit, not a tag: tags are mutable, and this action runs
+      # with access to the checkout. The previous reference was @0.24.0, which
+      # is not a tag this repository publishes (they are prefixed v), so the
+      # job failed to resolve it and never ran a single step.
       - name: Trivy filesystem scan (SYS-SEC-010)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
