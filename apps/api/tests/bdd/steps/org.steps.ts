@@ -97,6 +97,14 @@ When('I accept the invitation for {string}', async function (email: string) {
   capture(world, res);
 });
 
+When('the invitation for {string} is marked expired', async function (email: string) {
+  const world = w(this);
+  const invite = world.harness!.orgs.invitations.find((i) => i.orgId === world.orgId && i.email === email);
+  if (!invite) throw new Error(`no invitation found for ${email}`);
+  invite.status = 'expired';
+  await world.harness!.orgs.saveInvitation(invite);
+});
+
 When('I list members of the Acme organization as {string}', async function (_email: string) {
   const world = w(this);
   const acmeId = world.orgs?.Acme;
