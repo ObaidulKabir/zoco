@@ -54,17 +54,26 @@ export function useAuthApi() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const send = async (path: string, body: unknown, token?: string) => {
+  const send = async (
+    path: string,
+    body?: unknown,
+    token?: string,
+    method = 'POST',
+    extra: Record<string, string> = {},
+  ) => {
     setBusy(true);
     setError('');
     try {
+      const orgId = typeof window === 'undefined' ? '' : sessionStorage.getItem('zoqo.org') ?? '';
       const res = await fetch(`${apiBase}${path}`, {
-        method: 'POST',
+        method,
         headers: {
           'content-type': 'application/json',
           ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...(orgId ? { 'x-org-id': orgId } : {}),
+          ...extra,
         },
-        body: JSON.stringify(body),
+        body: method === 'GET' || method === 'HEAD' ? undefined : JSON.stringify(body ?? {}),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -87,3 +96,8 @@ export const storeTokens = (data: { accessToken?: string; refreshToken?: string 
 
 export const loadAccess = (): string =>
   typeof window === 'undefined' ? '' : sessionStorage.getItem('zoqo.access') ?? '';
+
+export const storeOrg = (orgId: string) => sessionStorage.setItem('zoqo.org', orgId);
+
+export const loadOrg = (): string =>
+  typeof window === 'undefined' ? '' : sessionStorage.getItem('zoqo.org') ?? '';

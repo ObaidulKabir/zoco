@@ -1,0 +1,133 @@
+# Staging: the same two deployables as production, fronted by Traefik.
+#
+# Unlike the development stack this file runs the API and web as containers
+# from published images rather than expecting them on the host, and it
+# publishes only the proxy's port. Everything else talks over the internal
+# network.
+#
+#   docker compose --env-file .env.staging -f docker-compose.staging.yml up -d
+#
+# Add -f docker-compose.staging.tls.yml once the domain resolves, to terminate
+# HTTPS with Let's Encrypt.
+
+name: zoqo-staging
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PERSISTENCE: postgres
+  API_PORT: 3001
+  DATABASE_URL: postgresql://zoqo_app:${APP_DB_PASSWORD:?set APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-zoqo}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+  BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+  CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+  AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-5}
+  AUTH_RATE_WINDOW_MS: ${AUTH_RATE_WINDOW_MS:-900000}
+  MAILER_DRIVER: ${MAILER_DRIVER:-smtp}
+  SMTP_HOST: mailpit
+  SMTP_PORT: 1025
+  MAIL_FROM: ${MAIL_FROM:-noreply@zoqo.local}
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-zoqo}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+  S3_BUCKET: ${S3_BUCKET:-zoqo}
+  S3_FORCE_PATH_STYLE: 'true'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zoqo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-zoqo}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-zoqo}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-zoqo}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    # Staging must never deliver real mail: everything is trapped here.
+    environment:
+      MP_MAX_MESSAGES: 5000
+    # Bound to loopback, never to the proxy. Trapped mail contains verification
+    # codes, invitation tokens and password-reset links, so anyone who can read
+    # this inbox can take over any staging account. Reach it with an SSH
+    # tunnel: ssh -L 8025:localhost:8025 <user>@<host>
+    ports:
+      - '127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025'
+
+  # Runs to completion before the API starts, so the schema is never behind the
+  # code. Safe to repeat: the migrator keeps a ledger and applies only new files.
+  migrate:
+    image: ${IMAGE_REGISTRY:-ghcr.io/obaidulkabir/zoco}/api:${IMAGE_TAG:-latest}
+    environment: *api-env
+    command: ['node', 'dist/migrate.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    image: ${IMAGE_REGISTRY:-ghcr.io/obaidulkabir/zoco}/api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+      minio:
+        condition: service_healthy
+
+  web:
+    image: ${IMAGE_REGISTRY:-ghcr.io/obaidulkabir/zoco}/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      api:
+        condition: service_started
+
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+    ports:
+      - '${TRAEFIK_HTTP_PORT:-80}:80'
+    volumes:
+      - ../traefik/staging:/etc/traefik/dynamic:ro
+    depends_on:
+      api:
+        condition: service_started
+      web:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  minio_data:

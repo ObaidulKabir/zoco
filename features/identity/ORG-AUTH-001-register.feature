@@ -28,6 +28,21 @@ Feature: User registration with email and password
     Then the response status is 403
     And the error code is "UNVERIFIED"
 
+  Scenario: An invited person reads the OTP in-app instead of waiting for mail
+    Given a clean identity store
+    And an invitation for "pat@acme.test" with token "invite-123"
+    When I register "Pat Roy" with email "pat@acme.test" using invite token "invite-123"
+    Then the response status is 201
+    And the verification code is returned in the response
+
+  @security
+  Scenario: A forged invite token never reveals the OTP
+    Given a clean identity store
+    And an invitation for "pat@acme.test" with token "invite-123"
+    When I register "Mallory" with email "victim@acme.test" using invite token "invite-123"
+    Then the response status is 201
+    And no verification code is returned in the response
+
   Scenario: OTP verification activates the account and returns tokens
     Given a clean identity store
     When I register with name "Sarah Chen" email "sarah@acme.test" and password "CorrectH0rse!"

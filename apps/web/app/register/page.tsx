@@ -1,12 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { AuthShell, Field, useAuthApi } from '../auth-ui';
 import { Button } from '@zoqo/ui';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const inviteToken = params.get('invite') ?? '';
   const { error, busy, send } = useAuthApi();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -14,11 +16,23 @@ export default function RegisterPage() {
 
   return (
     <AuthShell title="Create account">
+      {inviteToken ? <p>You were invited. Your code will appear on the next step.</p> : null}
       <form
         onSubmit={async (e) => {
           e.preventDefault();
-          const json = await send('/v1/auth/register', { name, email, password });
-          if (json) router.push(`/verify?email=${encodeURIComponent(email)}`);
+          const json = await send('/v1/auth/register', {
+            name,
+            email,
+            password,
+            ...(inviteToken ? { inviteToken } : {}),
+          });
+          if (json) {
+            const code = json.data?.verificationCode as string | undefined;
+            const q = new URLSearchParams({ email });
+            if (code) q.set('otp', code);
+            if (inviteToken) q.set('invite', inviteToken);
+            router.push(`/verify?${q.toString()}`);
+          }
         }}
       >
         <Field label="Full name" value={name} onChange={setName} autoComplete="name" />
@@ -36,5 +50,13 @@ export default function RegisterPage() {
         </Button>
       </form>
     </AuthShell>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

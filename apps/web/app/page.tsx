@@ -12,6 +12,8 @@ export default function HomePage() {
         {' · '}
         <a href="/login">Login</a>
         {' · '}
+        <a href="/orgs">Organizations</a>
+        {' · '}
         <a href="/sessions">Sessions</a>
       </p>
       <p>

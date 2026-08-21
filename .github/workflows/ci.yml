@@ -8,6 +8,23 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zoqo
+          POSTGRES_PASSWORD: zoqo
+          POSTGRES_DB: zoqo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zoqo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Presence of this variable is what un-skips the persistence and RLS suite.
+      TEST_DATABASE_URL: postgresql://zoqo:zoqo@localhost:5432/zoqo_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,12 +37,68 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      # Typecheck runs with noEmit, which tolerates things a real build refuses.
+      # Without this the deployable artifact is only ever compiled at release.
+      - run: pnpm build
       - run: pnpm test:unit
       - run: pnpm test:int
       - run: pnpm test:bdd
       - run: pnpm test:boundaries
       - run: pnpm check:no-saas
       - run: pnpm check:licenses
+      - name: OpenAPI document is current (sprint plan §1)
+        run: pnpm openapi:check
+      - name: Refresh requirements traceability matrix
+        run: pnpm qa:rtm
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rtm
+          path: docs/qa/rtm.csv
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @zoqo/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Dependency audit (SYS-SEC-010)
+        run: pnpm audit --audit-level high
+      - name: Trivy filesystem scan (SYS-SEC-010)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
 
   images:
     runs-on: ubuntu-latest

@@ -1,0 +1,32 @@
+# The HTTPS form of infra/traefik/staging/routes.yml, mounted in place of it by
+# docker-compose.staging.tls.yml. Same two routers, moved to the websecure
+# entrypoint and asking the letsencrypt resolver for a certificate.
+http:
+  routers:
+    api:
+      rule: "PathPrefix(`/v1`) || PathPrefix(`/health`) || PathPrefix(`/ready`) || PathPrefix(`/docs`)"
+      service: api
+      entryPoints:
+        - websecure
+      priority: 10
+      tls:
+        certResolver: letsencrypt
+
+    web:
+      rule: "PathPrefix(`/`)"
+      service: web
+      entryPoints:
+        - websecure
+      priority: 1
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: "http://api:3001"
+    web:
+      loadBalancer:
+        servers:
+          - url: "http://web:3000"

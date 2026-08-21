@@ -1,26 +1,30 @@
 import { AfterAll, Given, Then, When } from '@cucumber/cucumber';
 import request from 'supertest';
+import { sha256 } from '../../../src/modules/identity/domain/crypto';
 import { closeHarness, resetHarness, type Harness } from '../harness';
 
 type World = {
   harness?: Harness;
   status?: number;
   body?: { success?: boolean; data?: Record<string, unknown>; error?: { code?: string; message?: string } };
+  headers?: Record<string, string | string[] | undefined>;
   accessToken?: string;
   refreshToken?: string;
   previousRefreshToken?: string;
   sessionId?: string;
+  userId?: string;
 };
 
 function w(self: unknown): World {
   return self as World;
 }
 
-function capture(world: World, res: { status: number; body: World['body'] }) {
+function capture(world: World, res: { status: number; body: World['body']; headers?: World['headers'] }) {
   world.status = res.status;
   world.body = res.body;
+  world.headers = res.headers;
   const data = res.body?.data as
-    | { accessToken?: string; refreshToken?: string; sessionId?: string }
+    | { accessToken?: string; refreshToken?: string; sessionId?: string; user?: { id?: string } }
     | undefined;
   if (data?.accessToken) world.accessToken = data.accessToken;
   if (data?.refreshToken) {
@@ -28,6 +32,7 @@ function capture(world: World, res: { status: number; body: World['body'] }) {
     world.refreshToken = data.refreshToken;
   }
   if (data?.sessionId) world.sessionId = data.sessionId;
+  if (data?.user?.id) world.userId = data.user.id;
 }
 
 Given('a clean identity store', async function () {
@@ -55,6 +60,36 @@ Given('a verified user {string} with password {string}', async function (email: 
   const res = await request(h.app.getHttpServer()).post('/v1/auth/verify-email').send({ email, otp });
   capture(world, res);
 });
+
+Given('the auth rate limit is {int} attempts per IP', async function (limit: number) {
+  const world = w(this);
+  const h = world.harness ?? (await resetHarness());
+  world.harness = h;
+  process.env.AUTH_RATE_LIMIT = String(limit);
+  h.rateLimiter.clear();
+});
+
+Given('an invitation for {string} with token {string}', async function (email: string, token: string) {
+  const world = w(this);
+  const h = world.harness ?? (await resetHarness());
+  world.harness = h;
+  await h.invitations.record(sha256(token), {
+    email,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  });
+});
+
+When(
+  'I register {string} with email {string} using invite token {string}',
+  async function (name: string, email: string, inviteToken: string) {
+    const world = w(this);
+    const h = world.harness!;
+    const res = await request(h.app.getHttpServer())
+      .post('/v1/auth/register')
+      .send({ name, email, password: 'CorrectH0rse!', inviteToken });
+    capture(world, res);
+  },
+);
 
 When(
   'I register with name {string} email {string} and password {string}',
@@ -192,6 +227,23 @@ Then('the error message is {string}', function (message: string) {
 Then('a verification email with a 6-digit OTP was sent to {string}', function (email: string) {
   const otp = otpFrom(w(this).harness!, email);
   if (!otp || !/^\d{6}$/.test(otp)) throw new Error('OTP email missing');
+});
+
+Then('a rate limit header is returned', function () {
+  const headers = w(this).headers ?? {};
+  if (!headers['x-ratelimit-limit'] || !headers['retry-after']) {
+    throw new Error(`rate limit headers missing: ${JSON.stringify(headers)}`);
+  }
+});
+
+Then('the verification code is returned in the response', function () {
+  const code = (w(this).body?.data as { verificationCode?: string } | undefined)?.verificationCode;
+  if (!code || !/^\d{6}$/.test(code)) throw new Error(`expected a 6-digit code, got ${code}`);
+});
+
+Then('no verification code is returned in the response', function () {
+  const code = (w(this).body?.data as { verificationCode?: string } | undefined)?.verificationCode;
+  if (code) throw new Error('verification code leaked to an unverified invite');
 });
 
 Then('access and refresh tokens are returned', function () {

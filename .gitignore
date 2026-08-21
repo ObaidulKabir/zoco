@@ -9,6 +9,7 @@ coverage
 .turbo
 playwright-report
 test-results
+apps/api/reports
 infra/compose/data
 *.age
 !*.age.example

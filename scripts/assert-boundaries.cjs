@@ -67,7 +67,10 @@ try {
   });
 } catch (err) {
   output = `${err.stdout || ''}${err.stderr || ''}`;
-  failedAsRequired = /boundaries/.test(output);
+  // Match the rule id, not the word "boundaries". ESLint failing to load the
+  // plugin prints "Failed to load plugin 'boundaries'", which a looser test
+  // reads as success — the guard then passes precisely when it is not running.
+  failedAsRequired = /boundaries\/element-types/.test(output) && !/Failed to load plugin/.test(output);
 }
 
 try {

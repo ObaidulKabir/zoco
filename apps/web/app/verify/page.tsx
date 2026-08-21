@@ -10,7 +10,8 @@ function VerifyForm() {
   const params = useSearchParams();
   const { error, busy, send } = useAuthApi();
   const [email, setEmail] = useState(params.get('email') ?? '');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(params.get('otp') ?? '');
+  const inviteToken = params.get('invite') ?? '';
 
   return (
     <AuthShell title="Verify email">
@@ -21,7 +22,7 @@ function VerifyForm() {
           const json = await send('/v1/auth/verify-email', { email, otp });
           if (json?.data) {
             storeTokens(json.data);
-            router.push('/sessions');
+            router.push(inviteToken ? `/invite/accept?token=${encodeURIComponent(inviteToken)}` : '/orgs');
           }
         }}
       >

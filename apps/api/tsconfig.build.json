@@ -2,7 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "rootDir": "src"
+    "noEmitOnError": true,
+    "rootDir": "src",
+    // Typecheck and tests read @zoqo/shared straight from source, which is
+    // convenient but drags those files into the program. An emitting build
+    // cannot do that: they sit outside rootDir. Point at the declarations
+    // instead, so `pnpm --filter @zoqo/shared build` has to run first.
+    "paths": {
+      "@zoqo/shared": ["../../packages/shared/dist/index.d.ts"]
+    }
   },
   "include": ["src"],
   "exclude": ["**/*.spec.ts"]

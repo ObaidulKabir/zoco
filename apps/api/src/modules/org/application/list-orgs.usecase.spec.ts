@@ -1,23 +1,25 @@
 import { ListOrgsUseCase } from './list-orgs.usecase';
-import type { OrgStorePort } from './ports/org-store.port';
 import { Organization } from '../domain/organization';
-
-class OrgStore implements OrgStorePort {
-  constructor(private readonly orgs: Organization[]) {}
-  list() {
-    return Promise.resolve(this.orgs);
-  }
-}
+import type { OrgDirectoryPort } from './ports/org-directory.port';
 
 describe('ListOrgsUseCase', () => {
-  it('returns no organizations until Sprint 2 seed', async () => {
-    const usecase = new ListOrgsUseCase(new OrgStore([]));
-    await expect(usecase.execute()).resolves.toEqual([]);
-  });
-
-  it('returns organizations from the store', async () => {
-    const org = new Organization('1', 'Acme', 'acme');
-    const usecase = new ListOrgsUseCase(new OrgStore([org]));
-    await expect(usecase.execute()).resolves.toEqual([org]);
+  it('returns organizations the user belongs to', async () => {
+    const acme = new Organization(
+      '1',
+      'Acme',
+      'acme',
+      'Software',
+      '11-50',
+      'BD',
+      'Asia/Dhaka',
+      null,
+      Organization.defaults('Asia/Dhaka'),
+      new Date(),
+    );
+    const directory = {
+      listOrgsForUser: (userId: string) => Promise.resolve(userId === 'u1' ? [acme] : []),
+    } as Pick<OrgDirectoryPort, 'listOrgsForUser'> as OrgDirectoryPort;
+    const result = await new ListOrgsUseCase(directory).execute('u1');
+    expect(result.map((o) => o.slug)).toEqual(['acme']);
   });
 });

@@ -1,0 +1,32 @@
+# Staging routing. Declared statically rather than discovered from Docker
+# labels: the topology is two known services, and the alternative means
+# mounting the Docker socket into the one container reachable from the
+# internet, where a proxy bug becomes root on the host.
+#
+# The API owns its four path prefixes; everything else is the web app. Priority
+# is explicit because PathPrefix(`/`) would otherwise win on length alone.
+http:
+  routers:
+    api:
+      rule: "PathPrefix(`/v1`) || PathPrefix(`/health`) || PathPrefix(`/ready`) || PathPrefix(`/docs`)"
+      service: api
+      entryPoints:
+        - web
+      priority: 10
+
+    web:
+      rule: "PathPrefix(`/`)"
+      service: web
+      entryPoints:
+        - web
+      priority: 1
+
+  services:
+    api:
+      loadBalancer:
+        servers:
+          - url: "http://api:3001"
+    web:
+      loadBalancer:
+        servers:
+          - url: "http://web:3000"

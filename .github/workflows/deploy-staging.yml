@@ -1,0 +1,164 @@
+name: deploy-staging
+
+# Publishing runs on every push to main and needs no configuration beyond the
+# repository itself. Deployment is gated on the STAGING_ENABLED repository
+# variable, so this workflow is useful before a host exists: it keeps proving
+# the images build and are runnable, and starts shipping the moment the box is
+# wired up. See docs/ops/staging.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: tag
+        run: echo "value=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - id: repo
+        run: echo "value=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.value }}/api:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.value }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The API origin is compiled into the client bundle, so it is a build
+      # argument. An image built here cannot be repointed at a different
+      # environment later.
+      - name: Publish web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.STAGING_URL || 'http://localhost:3001' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.value }}/web:${{ steps.tag.outputs.value }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.value }}/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: publish
+    if: vars.STAGING_ENABLED == 'true'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authorise against the staging host
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Pinned rather than trust-on-first-use: ssh-keyscan here would accept
+          # whatever answers, which is the whole attack.
+          echo "${{ secrets.STAGING_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Copy the stack definition
+        run: |
+          ssh "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}" 'mkdir -p ~/zoqo/infra'
+          scp -r infra/compose infra/postgres infra/traefik \
+            "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}:~/zoqo/infra/"
+
+      - name: Pull and restart
+        run: |
+          ssh "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}" bash -eu <<'REMOTE'
+            cd ~/zoqo/infra/compose
+            # .env.staging is created once by hand and never leaves the host.
+            test -f ~/zoqo/.env.staging || { echo "missing ~/zoqo/.env.staging"; exit 1; }
+            export IMAGE_TAG="${{ needs.publish.outputs.tag }}"
+            compose() {
+              docker compose --env-file ~/zoqo/.env.staging \
+                -f docker-compose.staging.yml -f docker-compose.staging.tls.yml "$@"
+            }
+            compose pull
+            compose up -d --remove-orphans
+            docker image prune -f
+          REMOTE
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: vars.STAGING_ENABLED == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Staging answers on /health (SYS-DEP-003)
+        env:
+          ZOQO_BDD_INFRA: '1'
+          API_URL: ${{ vars.STAGING_URL }}/health
+        run: pnpm test:bdd
+
+      - run: pnpm --filter @zoqo/web exec playwright install --with-deps chromium
+
+      # Mailpit is bound to the staging host's loopback, so the journeys reach
+      # it through the same SSH channel the deploy uses rather than over a
+      # public route. Trapped mail holds verification codes and reset links.
+      - name: Tunnel to the staging mailbox
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.STAGING_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh -f -N -L 8025:127.0.0.1:8025 \
+            "${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_HOST }}"
+          for _ in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8025/api/v1/info > /dev/null && exit 0
+            sleep 1
+          done
+          echo "mailbox tunnel never came up"; exit 1
+
+      - name: Run the @P0 journeys against the deployment
+        env:
+          E2E_BASE_URL: ${{ vars.STAGING_URL }}
+          MAILPIT_URL: http://127.0.0.1:8025
+        run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: staging-smoke-report
+          path: apps/web/playwright-report

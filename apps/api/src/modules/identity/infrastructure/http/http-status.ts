@@ -7,11 +7,14 @@ export const httpStatusFor = (code: string): number => {
       return 401;
     case 'UNVERIFIED':
     case 'LOCKED':
+    case 'FORBIDDEN':
       return 403;
     case 'NOT_FOUND':
       return 404;
     case 'DUPLICATE':
       return 409;
+    case 'RATE_LIMITED':
+      return 429;
     case 'NOT_IMPLEMENTED':
       return 501;
     default:

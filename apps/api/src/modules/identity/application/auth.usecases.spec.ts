@@ -15,6 +15,7 @@ import type { TokenPort } from './ports/token.port';
 import type { UserStorePort } from './ports/user-store.port';
 import type { SessionStorePort } from './ports/session-store.port';
 import type { AuditPort, AuditEvent } from './ports/audit.port';
+import type { InvitationLookupPort, PendingInvitation } from './ports/invitation-lookup.port';
 
 class FakeHasher implements PasswordHasherPort {
   async hash(plain: string): Promise<string> {
@@ -96,6 +97,16 @@ class MemoryAudit implements AuditPort {
   }
 }
 
+class MemoryInvitations implements InvitationLookupPort {
+  private readonly rows = new Map<string, PendingInvitation>();
+  add(token: string, invitation: PendingInvitation): void {
+    this.rows.set(sha256(token), invitation);
+  }
+  async findByTokenHash(tokenHash: string): Promise<PendingInvitation | null> {
+    return this.rows.get(tokenHash) ?? null;
+  }
+}
+
 describe('auth use cases', () => {
   const clock = new FixedClock(new Date('2026-08-20T12:00:00Z'));
   const hasher = new FakeHasher();
@@ -107,6 +118,7 @@ describe('auth use cases', () => {
     const mailer = new InMemoryMailer();
     const tokens = new FakeTokens();
     const audit = new MemoryAudit();
+    const invitations = new MemoryInvitations();
     const idp: IdentityProviderPort = {
       authenticate: async (creds) => {
         const user = await users.findByEmail(creds.email);
@@ -121,7 +133,8 @@ describe('auth use cases', () => {
       mailer,
       tokens,
       audit,
-      register: new RegisterUserUseCase(users, hasher, mailer, clock, otp),
+      invitations,
+      register: new RegisterUserUseCase(users, hasher, mailer, clock, otp, invitations),
       verify: new VerifyEmailUseCase(users, sessions, tokens, mailer, clock),
       login: new LoginUserUseCase(users, sessions, tokens, idp, clock, audit),
       refresh: new RefreshSessionUseCase(users, sessions, tokens, clock),
@@ -133,6 +146,57 @@ describe('auth use cases', () => {
       logout: new LogoutUseCase(sessions),
     };
   };
+
+  it('ORG-AUTH-001: shows the OTP in-app only for an invite issued to that email', async () => {
+    const s = setup();
+    s.invitations.add('good-token', {
+      email: 'pat@acme.test',
+      expiresAt: new Date(clock.now().getTime() + 60_000),
+    });
+
+    const invited = await s.register.execute({
+      name: 'Pat Roy',
+      email: 'pat@acme.test',
+      password: 'CorrectH0rse!',
+      inviteToken: 'good-token',
+    });
+    expect(invited.ok && invited.value.verificationCode).toBe('123456');
+  });
+
+  it('ORG-AUTH-001: never shows the OTP for a forged, stale, or mismatched invite', async () => {
+    const s = setup();
+    s.invitations.add('expired-token', {
+      email: 'stale@acme.test',
+      expiresAt: new Date(clock.now().getTime() - 60_000),
+    });
+    s.invitations.add('someone-elses', {
+      email: 'invited@acme.test',
+      expiresAt: new Date(clock.now().getTime() + 60_000),
+    });
+
+    const forged = await s.register.execute({
+      name: 'Mallory',
+      email: 'victim@acme.test',
+      password: 'CorrectH0rse!',
+      inviteToken: 'not-a-real-token',
+    });
+    const stale = await s.register.execute({
+      name: 'Stale',
+      email: 'stale@acme.test',
+      password: 'CorrectH0rse!',
+      inviteToken: 'expired-token',
+    });
+    const mismatched = await s.register.execute({
+      name: 'Mallory Two',
+      email: 'attacker@acme.test',
+      password: 'CorrectH0rse!',
+      inviteToken: 'someone-elses',
+    });
+
+    expect(forged.ok && forged.value.verificationCode).toBeUndefined();
+    expect(stale.ok && stale.value.verificationCode).toBeUndefined();
+    expect(mismatched.ok && mismatched.value.verificationCode).toBeUndefined();
+  });
 
   it('registers, emails OTP, and verifies', async () => {
     const s = setup();

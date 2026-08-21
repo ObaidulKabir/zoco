@@ -2,7 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    // A build that reports errors must not also leave output behind: partial
+    // emit from a failed compile is how stray .js files end up next to their
+    // sources and get picked up by the next tool that globs the tree.
+    "noEmitOnError": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["**/*.spec.ts"]
 }

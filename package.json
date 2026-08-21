@@ -14,15 +14,25 @@
     "test:int": "turbo run test:int",
     "test:bdd": "pnpm --filter @zoqo/api test:bdd",
     "test:e2e": "pnpm --filter @zoqo/web test:e2e",
+    "test:smoke": "pnpm --filter @zoqo/web test:smoke",
     "test:boundaries": "node scripts/assert-boundaries.cjs",
     "check:licenses": "node scripts/check-licenses.cjs",
     "check:no-saas": "node scripts/check-no-saas.cjs",
     "check:ports": "node scripts/check-ports.cjs",
+    "openapi": "pnpm --filter @zoqo/api openapi",
+    "openapi:check": "pnpm --filter @zoqo/api openapi:check",
+    "qa:rtm": "node scripts/build-rtm.cjs",
+    "qa:rtm:check": "node scripts/build-rtm.cjs --check",
+    "migrate": "pnpm --filter @zoqo/api migrate",
     "seed": "pnpm --filter @zoqo/api seed",
     "compose:minimal": "node scripts/compose.cjs minimal"
   },
   "devDependencies": {
     "turbo": "^2.1.3",
     "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "// neverBuiltDependencies": "swagger-ui-dist pulls @scarf/scarf, whose postinstall reports telemetry. Nothing in this project phones home.",
+    "neverBuiltDependencies": ["@scarf/scarf"]
   }
 }

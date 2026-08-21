@@ -1,0 +1,33 @@
+# Overlay that terminates HTTPS with Let's Encrypt. Apply it only once
+# STAGING_DOMAIN resolves to this host on the public internet: the HTTP-01
+# challenge needs port 80 reachable, and repeated failures hit the ACME rate
+# limit for the domain.
+#
+#   docker compose --env-file .env.staging \
+#     -f docker-compose.staging.yml -f docker-compose.staging.tls.yml up -d
+#
+# It swaps the dynamic configuration directory for the HTTPS routers and adds
+# the resolver plus a permanent redirect from port 80.
+
+services:
+  traefik:
+    command:
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?set ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ../traefik/staging-tls:/etc/traefik/dynamic:ro
+      - acme_data:/acme
+
+volumes:
+  acme_data:

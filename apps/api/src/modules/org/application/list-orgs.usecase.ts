@@ -1,10 +1,10 @@
 import type { Organization } from '../domain/organization';
-import type { OrgStorePort } from './ports/org-store.port';
+import type { OrgDirectoryPort } from './ports/org-directory.port';
 
 export class ListOrgsUseCase {
-  constructor(private readonly store: OrgStorePort) {}
+  constructor(private readonly directory: OrgDirectoryPort) {}
 
-  execute(): Promise<Organization[]> {
-    return this.store.list();
+  execute(userId: string): Promise<Organization[]> {
+    return this.directory.listOrgsForUser(userId);
   }
 }

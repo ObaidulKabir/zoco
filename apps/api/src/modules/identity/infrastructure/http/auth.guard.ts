@@ -6,8 +6,9 @@ import {
   Injectable,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { InMemorySessionStore } from '../persistence/in-memory-session-store';
-import { InMemoryUserStore } from '../persistence/in-memory-user-store';
+import type { SessionStorePort } from '../../application/ports/session-store.port';
+import type { UserStorePort } from '../../application/ports/user-store.port';
+import { SESSION_STORE, USER_STORE } from '../../identity.tokens';
 import { JwtTokenService } from '../security/jwt-token.service';
 
 export type AuthedRequest = Request & {
@@ -19,8 +20,8 @@ export type AuthedRequest = Request & {
 export class AuthGuard implements CanActivate {
   constructor(
     @Inject(JwtTokenService) private readonly tokens: JwtTokenService,
-    @Inject(InMemoryUserStore) private readonly users: InMemoryUserStore,
-    @Inject(InMemorySessionStore) private readonly sessions: InMemorySessionStore,
+    @Inject(USER_STORE) private readonly users: UserStorePort,
+    @Inject(SESSION_STORE) private readonly sessions: SessionStorePort,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

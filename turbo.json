@@ -3,14 +3,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**"],
+      "env": ["NEXT_PUBLIC_API_URL", "NEXT_OUTPUT"]
     },
     "lint": {},
     "typecheck": {
       "dependsOn": ["^build"]
     },
     "test:unit": {},
-    "test:int": {},
+    "test:int": {
+      "env": ["CI", "TEST_DATABASE_URL"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

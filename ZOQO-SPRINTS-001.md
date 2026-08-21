@@ -1,5 +1,5 @@
 # Zoqo — Sprint Series to Completion
-## Document ID: ZOQO-SPRINTS-001 · Version 1.1 · August 2026
+## Document ID: ZOQO-SPRINTS-001 · Version 1.2 · August 2026
 
 | Field | Detail |
 |---|---|
@@ -7,7 +7,7 @@
 | **Cadence** | 2 weeks per sprint |
 | **Method** | Outside-in BDD + TDD (§21 of the SRS) |
 | **Architecture** | Hexagonal modular monolith + sidecars (§4.4–§4.9) |
-| **Phase 1 outcome** | Installable PWA on a single self-hosted host, all P0 journeys live |
+| **Phase 1 outcome** | Installable PWA on a single self-hosted host, all P0 journeys live (S0–S12B, 28 weeks) |
 | **Full completion** | End of Phase 3 (Sprint 48) — enterprise + scale + desktop |
 
 This is the **execution plan**. The SDP is **how we run**. The SRS is the **what**. This file is the **when** and **in what order**. A sprint that ships behaviour not listed here needs an SRS version increment first (`SYS-DEV-010`). Sprint 0 must not start until [ZOQO-SDP-001](./ZOQO-SDP-001.md) §12 is signed.
@@ -51,15 +51,16 @@ gantt
     S04 Channels             :s4, after s3, 14d
     S05 B2B                  :s5, after s4, 14d
     S06 Files_Translate      :s6, after s5, 14d
-    S07 Meet_Calls           :s7, after s3, 14d
+    S07 Meet_Calls           :s7, after s6, 14d
     S08 Meet_Schedule        :s8, after s7, 14d
-    S09 Flow                 :s9, after s2, 14d
+    S09 Flow                 :s9, after s8, 14d
     S10 Notify               :s10, after s9, 14d
-    S11 Discover_PWA         :s11, after s5, 14d
-    S12 Harden_Beta          :s12, after s11, 14d
+    S11 Discover_PWA         :s11, after s10, 14d
+    S12 Harden_Prove         :s12, after s11, 14d
+    S12B Beta                :s12b, after s12, 14d
 
     section Phase2_Growth
-    S13-16 Platform_Identity :s13, after s12, 56d
+    S13-16 Platform_Identity :s13, after s12b, 56d
     S17-20 Product_Growth    :s17, after s13, 56d
     S21-24 Mobile_Billing    :s21, after s17, 56d
 
@@ -70,19 +71,33 @@ gantt
 
 Dates above are **illustrative** from 1 Sep 2026. Shift the start; keep the order.
 
-**Parallelism in Phase 1:** Meet (S7–S8) can overlap Messenger once DMs exist (after S3). Flow (S9) can overlap once Org exists (after S2). Notify (S10) needs events from Messenger, Meet, and Flow — start the *module shell* earlier (thin mail in S1–S2) and complete it in S10.
+**The chart is sequential, and that is deliberate.** At the assumed capacity of three engineers there is no second track to staff. Phase 1 is 28 weeks: 13 sprints of two weeks, S0 through S12B. Earlier versions of this file drew Meet, Flow and Discover as parallel bars finishing around week 16; that was never staffable at three engineers, and it also started Notify before Meet had produced the call events Notify consumes.
+
+**Where parallelism becomes available:** if you add a second team, these are the true constraints, and nothing else may move:
+
+| Sprint | Earliest start | Why |
+|---|---|---|
+| S7 Meet calls | after S3 | Calls launch from a conversation |
+| S9 Flow | after S2 | Needs org, departments, manager roles |
+| S11 Discover | after S5 | Connect button reuses the B2B flow |
+| S10 Notify | after **S3, S7 and S9** | Consumes message, call and approval events |
+| S12 Harden | after all feature sprints | Load, pen-test and restore act on the whole system |
 
 ```
 S0  Foundation
-S1  Auth (+ thin mail)
-S2  Org  (+ invites)
-S3  Messenger DMs ─────────────┐
-S4  Channels                   │
-S5  B2B                        ├── S6 Files + Translate
-S3 ─┬─ S7 Calls → S8 Schedule  │
-S2 ─┴─ S9 Flow ─────────────── S10 Notify
-S5 ──────────────────────────── S11 Discover + PWA
-All ─────────────────────────── S12 Harden + beta
+S1  Auth (+ thin mail, migrations, staging)
+S2  Org  (+ invites, migrations)
+S3  Messenger DMs (+ E2EE envelope + X3DH)
+S4  Channels
+S5  B2B
+S6  Files + Translate + channel search
+S7  Meet calls            [may overlap after S3 with a second team]
+S8  Meet scheduling
+S9  Flow                  [may overlap after S2 with a second team]
+S10 Notify                [needs S3 + S7 + S9 events]
+S11 Discover + PWA        [may overlap after S5 with a second team]
+S12 Harden + prove
+S12B Beta
 ```
 
 ---
@@ -97,6 +112,9 @@ Copied from the SRS so this file stands alone:
 - Ports for mail, storage, push, search, identity, translate.
 - Optional sidecars fail open (translate, search, mail, push). Send-message never 500s because LibreTranslate is down.
 - PR named with the SRS ID. Squash to `main`. CI deploys staging.
+- **Every sprint that adds a table ships its migration in that sprint.** No module runs on an in-memory store past its own sprint.
+- **Every sprint closes at ≥90% coverage on the `domain/` and `application/` folders it touched**, and >80% overall (SRS §22). This is not just a Sprint 1 rule.
+- **Every new endpoint appears in the OpenAPI document in the same PR.** Every new page joins the `@a11y` pack in the same PR.
 
 **Thin-now / complete-later (do not wait for the “home” sprint):**
 
@@ -106,11 +124,14 @@ Copied from the SRS so this file stands alone:
 | Audit | Append-only log middleware from S1 | S12 (search, export, retention) |
 | Rate limit | Auth endpoints from S1 | S12 (all limits + headers) |
 | Notify | Persist + in-app bell stub from S3 | S10 |
-| Search | `tsvector` column from S3 | S6/S11 (UI + filters) |
+| Search | `tsvector` column on **channel** messages from S3 | S6/S11 (UI + filters) |
+| Encryption | Message envelope + X3DH key exchange from S3 | S12 (Double Ratchet, rotation) |
+
+**Search scope decision (binding):** full-text search covers **channel messages only**. Internal DMs and B2B DMs are end-to-end encrypted (`SHIELD-CORE-001`, `MSG-XLANG-006`), so the server holds no plaintext to index and a `tsvector` over DM bodies cannot exist. `MSG-SEARCH-001` currently reads "all messages the user has access to" and needs the amendment listed in §11. Client-side DM search over the IndexedDB cache is a Phase 2 candidate, not a Phase 1 commitment.
 
 ---
 
-## 4. Phase 1 — Sprints 0 to 12 (MVP)
+## 4. Phase 1 — Sprints 0 to 12B (MVP)
 
 ### Sprint 0 — Foundation
 **Weeks 1–2 · Goal:** A developer clones the repo, runs `docker compose up`, and CI is green on an empty walking skeleton.
@@ -130,8 +151,11 @@ Copied from the SRS so this file stands alone:
 - [ ] Migrator, RLS helper, `tenant` AsyncLocalStorage
 - [ ] Port interfaces + in-memory fakes: `MailerPort`, `ObjectStoragePort`, `PushPort`, `SearchPort`, `IdentityProviderPort`, `TranslationPort`, `EventBusPort`, `ClockPort`
 - [ ] Jest, Cucumber.js, Playwright, ESLint boundaries, licence scan, SOPS+age, `.env.example`
+- [ ] axe-core in Playwright + `pnpm test:a11y` (WCAG 2.1 AA is an SRS design principle and a QA §4 PR gate — it needs a harness before the first page ships)
+- [ ] RTM generator: `docs/qa/rtm.csv` built from Gherkin tags in CI (QA §4)
 - [ ] Seed script stub (empty orgs to be filled S2)
-- [ ] GitHub Actions self-hosted runner pipeline (lint, unit, bdd smoke, image build)
+- [ ] GitHub Actions self-hosted runner pipeline (lint, unit, bdd smoke, a11y, trivy, image build)
+- [ ] Staging VPS ordered (SDP §12) — provisioning and the deploy pipeline land in S1
 
 **BDD to write**
 
@@ -149,6 +173,8 @@ Scenario: Stack starts with no vendor accounts
 - [ ] `pnpm test:unit`, `pnpm lint`, `pnpm typecheck` green
 - [ ] `docker compose --profile minimal up` works on 8 GB
 - [ ] Boundary lint fails a deliberate `domain → infrastructure` import
+- [ ] `pnpm test:a11y` runs and passes on the empty shell
+- [ ] `docs/qa/rtm.csv` generated by CI and published as an artifact
 - [ ] ADR-0001: modular monolith confirmed
 
 ---
@@ -174,10 +200,13 @@ Scenario: Stack starts with no vendor accounts
 **Build**
 
 - [ ] `identity` module: users, password hash bcrypt 12, JWT 15 min, refresh 30 d
+- [ ] **Migrations for `users`, `sessions`, `audit_log` (SRS §17.1) with RLS policies.** In-memory stores do not survive this sprint
 - [ ] `SmtpMailer` (Mailpit) driver
 - [ ] Auth pages: register, verify, login, forgot, reset, sessions
 - [ ] Audit events for login success/fail
 - [ ] Rate limit on `/v1/auth/*` (5 / 15 min / IP)
+- [ ] **Staging host provisioned; CI deploys `main` to staging.** QA §5 requires staging from the first sprint review, and QA §10 checks new `@P0` scenarios there
+- [ ] **OpenAPI document generated from the controllers and served at `/docs`** (Phase 1 exit criterion; cheap now, expensive to backfill)
 
 **BDD:** `@ORG-AUTH-001` through `@ORG-AUTH-005` (MFA may be `@P1`)
 
@@ -187,6 +216,8 @@ Scenario: Stack starts with no vendor accounts
 - [ ] Generic error on bad login (no email enumeration)
 - [ ] Tenant-less user can exist (org comes in S2)
 - [ ] Coverage ≥90% on `identity` domain/application
+- [ ] A restarted API still knows the users registered before the restart
+- [ ] Staging reachable, seeded, and green on the sprint's `@P0` scenarios
 
 ---
 
@@ -211,15 +242,19 @@ Scenario: Stack starts with no vendor accounts
 **Build**
 
 - [ ] `org` module + membership + RBAC guard
+- [ ] **Migrations for `organizations`, `memberships`, `departments`, `teams`, `invitations`, `channels`, `member_profiles` (SRS §17.1) with `tenant_id` RLS policies**
 - [ ] Default channels created as rows (messaging behaviour in S4; rows exist now)
 - [ ] Switch-org in the web shell
-- [ ] Seed: two orgs, all roles, for later B2B
+- [ ] Seed: two orgs, all roles, for later B2B — against the real database, so the running API sees it
 
 **Sprint exit**
 
 - [ ] User in two orgs; JWT/org header selects tenant
 - [ ] Second tenant cannot see Acme members
 - [ ] Journey 1 (§6.2) Playwright green
+- [ ] **Journey 10 (manage departments, teams and roles) Playwright green** — QA §8 Pack B requires J10 first-green in this sprint
+- [ ] **Invite expiry and CSV-junk scenarios automated** (QA §11, Sprint 2 row)
+- [ ] RLS proven: set `app.tenant_id` to Acme, query Nodi rows, get zero (QA §7.3)
 
 ---
 
@@ -228,9 +263,9 @@ Scenario: Stack starts with no vendor accounts
 
 | | |
 |---|---|
-| **SRS** | `MSG-DM-001`–`005` |
+| **SRS** | `MSG-DM-001`–`005`, `SHIELD-CORE-001` (envelope + X3DH only) |
 | **Depends on** | S1, S2 |
-| **Demo** | Two browsers: type, send, edit, react, reply, presence goes away after idle. |
+| **Demo** | Two browsers: type, send, edit, react, reply, presence goes away after idle. Server log shows ciphertext, not words. |
 
 **Stories**
 
@@ -239,19 +274,25 @@ Scenario: Stack starts with no vendor accounts
 3. Typing indicators
 4. Read receipts (privacy toggle)
 5. Presence via Valkey heartbeat
+6. **Encrypted message envelope + X3DH key exchange for DMs**
 
 **Build**
 
 - [ ] `messenger` module: conversations, messages (Postgres JSONB), RLS
+- [ ] **Encrypted envelope from day one:** DM bodies are ciphertext columns, keys exchanged via X3DH, client holds the private key. The Double Ratchet lands in S12; the *storage shape and key exchange* must not
 - [ ] Socket.IO + Valkey adapter; events from §18.5
-- [ ] In-app notification stub on new DM (full Notify in S10)
+- [ ] In-app notification stub on new DM (full Notify in S10) — payload carries sender and conversation only, never body text
+- [ ] `tsvector` on **channel** messages only (see the search scope decision in §3)
 - [ ] Web: sidebar, conversation view, composer
+
+> **Why the envelope moves here from S12.** `SHIELD-CORE-001` says the server cannot read DM content. Every sprint after this one reads messages — S6 indexes and translates them, S10 previews them in email. If DMs are plaintext until S12, then S12 is not a hardening sprint, it is a rewrite of the message pipeline, the search index, and the notification payloads while the same two weeks are also spending a load test, a pen test and a restore drill. Ship the shape now; ship the ratchet later.
 
 **Sprint exit**
 
 - [ ] Offline reconnect delivers missed messages
 - [ ] Journey 2 (DM part) green
 - [ ] Load smoke: 100 concurrent WS connections locally
+- [ ] **A DM row read straight from Postgres contains no plaintext** (QA Pack C)
 
 ---
 
@@ -320,7 +361,7 @@ Scenario: Stack starts with no vendor accounts
 2. On-demand translate + auto-translate (B2B default on)
 3. Language detect; preferred language on profile
 4. E2E path: client decrypt → translate; no server cache
-5. Message search UI (FTS already on the table)
+5. Message search UI over **channel messages** (FTS already on the table). DMs are excluded and the UI says so — see the search scope decision in §3
 6. B2B intro translation
 7. Translation down: banner, chat still works
 
@@ -335,6 +376,7 @@ Scenario: Stack starts with no vendor accounts
 - [ ] Journeys 2 (files) and 11 green
 - [ ] Malware sample quarantined (EICAR)
 - [ ] LibreTranslate stop-container test: send still 201
+- [ ] Searching a phrase that exists only in a DM returns nothing, and the UI explains why
 
 ---
 
@@ -463,33 +505,51 @@ Scenario: Stack starts with no vendor accounts
 
 ---
 
-### Sprint 12 — Harden, prove, beta
+### Sprint 12 — Harden and prove
 **Weeks 25–26 · Goal:** Production host is boring: secure, backed up, fast enough, documented.
 
 | | |
 |---|---|
 | **SRS** | `SHIELD-CORE-001`–`004`, §16, §20.7, Phase 1 exit criteria |
-| **Depends on** | All Phase 1 sprints |
-| **Demo** | Restore drill timed; load test report; two orgs chatting in two languages on `app.zoqo.com`. |
+| **Depends on** | All feature sprints |
+| **Demo** | Restore drill timed; load test report; audit export; pen-test findings closed. |
 
 **Stories / work**
 
-1. E2E encryption for DMs/B2B (Signal-style) — if not incrementally done in S3/S5, this sprint finishes it
+1. **Double Ratchet completion** on the S3 envelope, plus key rotation (`SHIELD-CORE-001`). The envelope, X3DH and ciphertext storage already exist from S3
 2. Audit log UI + export
-3. Rate-limit headers everywhere
-4. Pen-test tenant isolation suite
+3. Rate-limit headers everywhere; per-user 100/min (`SHIELD-CORE-004`)
+4. Pen-test tenant isolation suite (QA Pack C in full)
 5. Load: 1,000 concurrent, p95 API <200 ms
 6. Backup restore drill ≤4 h
 7. Translation quality sign-off `SYS-XLANG-002`
-8. Org chart / MFA / lobby leftovers (P1) if any
-9. Runbooks: deploy, rebuild, email, TURN
-10. Beta: 5–10 friendly organizations
+8. OpenAPI document reviewed and published; runbooks: deploy, rebuild, email, TURN
 
-**Sprint exit = Phase 1 exit** (SRS §22). No beta without that list.
+**Sprint exit = Phase 1 exit** (SRS §22), except the two-week staging soak and beta feedback, which S12B carries.
 
 ---
 
-## 5. Phase 1 backlog (explicitly not in S0–S12)
+### Sprint 12B — Beta
+**Weeks 27–28 · Goal:** Real organizations use it for two weeks and the P1 debt is paid.
+
+| | |
+|---|---|
+| **SRS** | Phase 1 exit criteria (soak, beta) |
+| **Depends on** | S12 |
+| **Demo** | Two real orgs chatting in two languages on `app.zoqo.com`, two weeks with no Blocker. |
+
+**Stories / work**
+
+1. Onboard 5–10 friendly organizations; support rota; feedback triage
+2. P1 leftovers: org chart (`ORG-SETUP-004`), MFA (`ORG-AUTH-003`), meeting lobby (`MEET-CALL-006`), search UX polish
+3. Fix-forward on beta defects by QA §9 severity
+4. Staging stable for 2+ weeks — the Phase 1 exit clause that cannot be compressed
+
+> **Why S12 was split.** The single sprint held ten workstreams — a Signal-protocol implementation, an audit UI, a pen test, a 1,000-user load test, a restore drill, a translation sign-off, three P1 features, four runbooks and beta onboarding — against 40–45 engineer-days. Items 1, 4, 5 and 6 could each consume the sprint alone, and "staging stable for 2+ weeks" cannot fit inside the two weeks that are also building the thing. Phase 2 still starts at S13, so every downstream sprint number and the release-train table are unchanged.
+
+---
+
+## 5. Phase 1 backlog (explicitly not in S0–S12B)
 
 Do not sneak these in. They have a home in Phase 2+.
 
@@ -500,6 +560,7 @@ Do not sneak these in. They have a home in Phase 2+.
 | Stripe billing | 2 |
 | B2B shared channels, guest portal | 2 |
 | Message search on OpenSearch | 2 (only if FTS misses p95) |
+| Client-side DM search over the IndexedDB cache | 2 (the only way to search E2E content) |
 | Meeting recording, lobby polish, breakout | 2 |
 | Visual workflow builder, delegation, SLA | 2 |
 | Insights dashboards | 2 |
@@ -525,7 +586,7 @@ Cadence stays 2 weeks. Each sprint still vertical + BDD.
 **Goal:** Google and Microsoft login via `IdentityProviderPort`. Existing passwords still work.
 
 ### Sprints 17–18 — Messenger growth
-**Goal:** Voice notes, polls, B2B shared channels, guest portal, message search UX polish.
+**Goal:** Voice notes, polls, B2B shared channels, guest portal, message search UX polish, client-side DM search over the IndexedDB cache.
 
 ### Sprints 19–20 — Meet + Flow growth
 **Goal:** Lobby default-on for B2B, recording to MinIO, breakout rooms; visual workflow builder + parallel approval.
@@ -549,14 +610,16 @@ Cadence stays 2 weeks. Each sprint still vertical + BDD.
 
 Grouped in 8-week blocks. Re-plan at Sprint 25 with real usage data.
 
-| Sprints | Weeks (approx.) | Goal |
+Each block is four sprints — eight weeks, about two months. Months are counted from the start of Sprint 0, with Phase 1 running to month 7 (28 weeks) and Phase 2 to month 12.
+
+| Sprints | Months (approx.) | Goal |
 |---|---|---|
-| **25–28** | 13–16 months | Self-hosted Ollama summaries (`AI-001`); meeting notes (`AI-004`); live captions if models allow |
-| **29–32** | 17–18 months | SSO/SAML, IP allow-list, data-residency switch, compliance reports |
-| **33–36** | 19–20 months | Public API + webhooks + developer portal; first vertical pack (e.g. trading / garments) |
-| **37–40** | 21–22 months | Multi-region or EKS; Kafka for the event bus; S3/RDS if cost now beats ops |
-| **41–44** | 22–23 months | Tauri desktop; UI i18n (bn, hi, ar, es, fr, de, ja) + chrome RTL |
-| **45–48** | 23–24 months | Hardening, 10k-webinar path, performance, **v2.0 launch** |
+| **25–28** | 13–14 | Self-hosted Ollama summaries (`AI-001`); meeting notes (`AI-004`); live captions if models allow |
+| **29–32** | 15–16 | SSO/SAML, IP allow-list, data-residency switch, compliance reports |
+| **33–36** | 17–18 | Public API + webhooks + developer portal; first vertical pack (e.g. trading / garments) |
+| **37–40** | 19–20 | Multi-region or EKS; Kafka for the event bus; S3/RDS if cost now beats ops |
+| **41–44** | 21–22 | Tauri desktop; UI i18n (bn, hi, ar, es, fr, de, ja) + chrome RTL |
+| **45–48** | 23–24 | Hardening, 10k-webinar path, performance, **v2.0 launch** |
 
 **Product complete** means Phase 3 exit: enterprise SSO, public API, desktop, localised chrome, scaled media, AI suite on ports (self-hosted first).
 
@@ -567,7 +630,7 @@ Grouped in 8-week blocks. Re-plan at Sprint 25 with real usage data.
 | Release | After sprint | What users get |
 |---|---|---|
 | **Internal dogfood** | 6 | Auth, org, DMs, channels, B2B, files, translation |
-| **Private beta** | 12 | Full P0 + PWA on `app.zoqo.com` |
+| **Private beta** | 12B | Full P0 + PWA on `app.zoqo.com` |
 | **Public beta** | 16 | OAuth, multi-node, better uptime |
 | **GA** | 24 | Billing + mobile |
 | **v2.0** | 48 | Enterprise + scale + desktop |
@@ -588,13 +651,30 @@ No card in `Done` without an SRS ID and a green tagged scenario.
 
 | Risk | Sprint hit | Mitigation |
 |---|---|---|
-| E2E encryption slower than expected | 3, 5, 12 | Ship server-side encryption first; finish Signal ratchet in S12; do not block DMs |
+| E2E encryption slower than expected | 3, 12 | Envelope + X3DH in S3 so the storage shape is right from the start; Double Ratchet in S12. A late ratchet delays a security property, not a rewrite |
+| DM search demanded after the channels-only decision | 6, 11 | Say it in the UI from S6; client-side IndexedDB search is a Phase 2 candidate, not a Phase 1 promise |
 | LibreTranslate quality on bn | 6, 12 | Fixture in S6; human review S12; DeepL only with sign-off |
 | Email in spam | 1, 2, 10 | Mailpit locally; PTR/SPF from S10; in-app OTP always |
 | LiveKit/NAT | 7 | coturn in S0; dedicated NAT test day in S7 |
 | S6 overloaded | 6 | Search UI may slip to S11; translation is P0 and does not slip |
 | Notify late | 10 | Stubs from S3 so product is demoable; S10 replaces stubs |
+| Staging never gets built and QA runs on laptops | 1 onward | Staging is an S1 build item and an S1 exit criterion, not an ambient assumption |
+| Persistence deferred "just one more sprint" | 1, 2 | Migrations are a standing rule and an S1/S2 exit criterion: a restart must not lose data |
 | Team of 1–2 | All | Keep sequence, 3-week sprints, cut P1 (org chart, MFA, lobby, search UI) |
+
+---
+
+## 11. Amendments this plan requires in other documents
+
+This file may not silently contradict the SRS (`SYS-DEV-010`). Each row below is a change v1.2 assumes; until it is made, the documents disagree and the SRS wins.
+
+| Document | Change needed | Reason |
+|---|---|---|
+| SRS `MSG-SEARCH-001` | Scope from "all messages the user has access to" to **channel messages only**; note DM search as Phase 2 | A server-side `tsvector` cannot index content the server is forbidden to read (`SHIELD-CORE-001`, `MSG-XLANG-006`) |
+| SRS `NOTIF-CORE-002` | Email for a new DM carries sender and conversation, not a body preview | Same reason: no server-side plaintext for DMs |
+| SRS §22 Phase 1 table | Phase 1 is sprints 0–12B, weeks 1–28 | Sprint 12 split into harden (S12) and beta (S12B) |
+| SRS §22 Phase 1 table | Add the migration, staging, a11y and OpenAPI owners now named in S0–S2 | They were exit criteria with no sprint that built them |
+| QA §11 Sprint 2 row | Already correct — the sprint file was the one out of step | S2 exit now requires J10, invite expiry and CSV junk |
 
 ---
 
@@ -604,3 +684,4 @@ No card in `Done` without an SRS ID and a green tagged scenario.
 |---|---|---|
 | 1.0 | August 2026 | Initial sprint series: S0–S12 detailed, S13–S48 outlined, aligned to SRS v1.3 |
 | 1.1 | August 2026 | Linked to ZOQO-SDP-001; Sprint 0 gated on SDP §12 |
+| 1.2 | August 2026 | Encryption envelope + X3DH moved S12 → S3; search scoped to channels only; S12 split into S12 (harden) and S12B (beta); Gantt made sequential and the S10 dependency corrected; migrations, staging, a11y, OpenAPI and RTM given sprint owners; S2 exit aligned to QA Pack B (J10, invite expiry, CSV junk); coverage/migration/OpenAPI/a11y promoted to standing rules; Phase 3 month arithmetic fixed; §11 amendment register added |

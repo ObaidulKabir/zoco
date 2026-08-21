@@ -3,6 +3,6 @@ module.exports = {
     requireModule: ['reflect-metadata', 'tsx/cjs'],
     require: ['tests/bdd/steps/**/*.ts'],
     paths: ['../../features/**/*.feature'],
-    format: ['progress'],
+    format: ['progress', 'json:reports/cucumber.json'],
   },
 };

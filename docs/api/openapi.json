@@ -1,0 +1,2641 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "Answers as long as the process is up.",
+        "operationId": "HealthController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Process is alive."
+          }
+        },
+        "summary": "Liveness probe",
+        "tags": [
+          "platform"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "description": "Answers when the API is willing to take traffic.",
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Ready for traffic."
+          }
+        },
+        "summary": "Readiness probe",
+        "tags": [
+          "platform"
+        ]
+      }
+    },
+    "/v1/identity/users": {
+      "get": {
+        "description": "Development aid; not tenant-scoped.",
+        "operationId": "IdentityController_users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All registered users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicUser"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List registered users",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/v1/auth/register": {
+      "post": {
+        "description": "Creates a pending_verification user and emails a 6-digit OTP. The code is only returned in the response when inviteToken matches a live invitation for the same address (ORG-AUTH-001).",
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Registered; verification pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicUser"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register a person",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/verify-email": {
+      "post": {
+        "description": "Activates the account and issues a first session.",
+        "operationId": "AuthController_verify",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Verified and signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify an email address with the OTP",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "description": "Wrong credentials answer with one generic error whether or not the address exists, so the endpoint cannot be used to enumerate users. Five failures in 15 minutes locks the account for 30.",
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sign in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "description": "Refresh tokens rotate: the presented token is invalid afterwards.",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "New token pair.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Exchange a refresh token for a new pair",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/forgot-password": {
+      "post": {
+        "description": "Always reports success, whether or not the address is registered.",
+        "operationId": "AuthController_forgot",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Reset email sent if the address exists."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Start a password reset",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/reset-password": {
+      "post": {
+        "description": "Consumes the token and revokes every existing session for the user.",
+        "operationId": "AuthController_reset",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Password replaced; all sessions revoked."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited: 5 attempts per 15 minutes per IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Complete a password reset",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/mfa/enable": {
+      "post": {
+        "description": "Not implemented yet. ORG-AUTH-003 is a P1 carried forward from Sprint 1.",
+        "operationId": "AuthController_enableMfa",
+        "parameters": [],
+        "responses": {
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not implemented."
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Enable TOTP multi-factor authentication",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/sessions": {
+      "get": {
+        "operationId": "AuthController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Active sessions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List active sessions for the signed-in user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/sessions/{sessionId}": {
+      "delete": {
+        "description": "Signs out a single device.",
+        "operationId": "AuthController_revoke",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Session revoked."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Revoke one session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_doLogout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Signed out."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Sign out of the current session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/logout-all": {
+      "post": {
+        "operationId": "AuthController_doLogoutAll",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "All sessions revoked."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Sign out of every device",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/orgs": {
+      "post": {
+        "description": "The caller becomes its owner. Free plan installs cap each person at 10 organizations.",
+        "operationId": "OrgController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Organization created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "An organization with this slug already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create an organization",
+        "tags": [
+          "org"
+        ]
+      },
+      "get": {
+        "operationId": "OrgController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Organizations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrgView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List the organizations the caller belongs to",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/invitations/accept": {
+      "post": {
+        "description": "Joins the inviting organization. Expired or already-used tokens are refused.",
+        "operationId": "OrgController_accept",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Joined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Accept an invitation",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/members": {
+      "get": {
+        "description": "Same as GET /v1/orgs/{orgId}/members, with the organization taken from the header.",
+        "operationId": "OrgController_membersByHeader",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List members of the acting organization",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}": {
+      "get": {
+        "operationId": "OrgController_get",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get one organization",
+        "tags": [
+          "org"
+        ]
+      },
+      "patch": {
+        "description": "Admin or owner only. Settings changes are written to the audit log.",
+        "operationId": "OrgController_patch",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update organization name and settings",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/invite": {
+      "post": {
+        "description": "Who may invite depends on the organization invitationPolicy. Rows that cannot be parsed are returned as rejects rather than dropped, so the caller can correct them.",
+        "operationId": "OrgController_invite",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Invitations created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Invite people by email or pasted CSV",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/members": {
+      "get": {
+        "operationId": "OrgController_members",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List members of an organization",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/members/{userId}": {
+      "patch": {
+        "description": "Demoting the last owner is refused, so an organization always has one.",
+        "operationId": "OrgController_patchMember",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated member.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Change a member's role or department",
+        "tags": [
+          "org"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgController_deleteMember",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Member removed."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Remove a member from an organization",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/departments": {
+      "get": {
+        "operationId": "OrgController_departments",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Departments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DepartmentView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List departments",
+        "tags": [
+          "org"
+        ]
+      },
+      "post": {
+        "description": "Nesting is capped at 5 levels.",
+        "operationId": "OrgController_addDepartment",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Department created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A department with this name already exists here.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a department",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/departments/{deptId}": {
+      "patch": {
+        "operationId": "OrgController_patchDepartment",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated department.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Rename or describe a department",
+        "tags": [
+          "org"
+        ]
+      },
+      "delete": {
+        "description": "Members must be reassigned in the same call, so nobody is orphaned.",
+        "operationId": "OrgController_removeDepartment",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Department deleted."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete a department",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/teams": {
+      "get": {
+        "operationId": "OrgController_teams",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teams.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TeamView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List teams",
+        "tags": [
+          "org"
+        ]
+      },
+      "post": {
+        "operationId": "OrgController_addTeam",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Team created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a team inside a department",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/teams/{teamId}": {
+      "patch": {
+        "operationId": "OrgController_patchTeam",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated team.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Rename or describe a team",
+        "tags": [
+          "org"
+        ]
+      },
+      "delete": {
+        "operationId": "OrgController_removeTeam",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Team deleted."
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Delete a team",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/profile": {
+      "get": {
+        "description": "Profiles are per-organization, so the same person can present differently in each.",
+        "operationId": "OrgController_profile",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberProfileView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get the caller's profile in this organization",
+        "tags": [
+          "org"
+        ]
+      },
+      "patch": {
+        "operationId": "OrgController_patchProfile",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberProfileView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update the caller's profile in this organization",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/profile/avatar-url": {
+      "post": {
+        "description": "The image goes straight to object storage; the API never proxies the bytes. Max 5 MB.",
+        "operationId": "OrgController_avatar",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get a pre-signed URL for an avatar upload",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/logo-url": {
+      "post": {
+        "description": "Admin or owner only. Max 2 MB.",
+        "operationId": "OrgController_logo",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get a pre-signed URL for an organization logo upload",
+        "tags": [
+          "org"
+        ]
+      }
+    },
+    "/v1/orgs/{orgId}/chart": {
+      "get": {
+        "description": "Not implemented yet. ORG-DEPT org chart is a P1 carried forward from Sprint 2.",
+        "operationId": "OrgController_chart",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "description": "Acting organization. Required when the path has no :orgId, and must match it when it does.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Request failed validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired, or invalid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but not allowed to do this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not implemented."
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get the organization chart",
+        "tags": [
+          "org"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Zoqo API",
+    "description": "Zoqo is a self-hosted communication hub. Every response is an envelope:\n`{ \"success\": true, \"data\": ... }` on success, `{ \"success\": false, \"error\": { code, message, requestId } }`\non failure (SRS §18.2). Quote the `requestId` — also returned as the `X-Request-Id` header — when reporting a problem.\n\nAuthenticate with the access token from `POST /v1/auth/login`. Organization-scoped routes also need the\n`X-Org-Id` header naming the organization you are acting in.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Registration, sign-in, sessions, password reset"
+    },
+    {
+      "name": "identity",
+      "description": "People, independent of any organization"
+    },
+    {
+      "name": "org",
+      "description": "Organizations, members, departments, teams, profiles"
+    },
+    {
+      "name": "platform",
+      "description": "Health and readiness probes"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "access-token": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Access token, 15 minute lifetime."
+      }
+    },
+    "schemas": {
+      "PublicUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_verification",
+              "active",
+              "locked",
+              "suspended"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "status"
+        ]
+      },
+      "ApiErrorBody": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR",
+            "description": "Stable machine-readable code."
+          },
+          "message": {
+            "type": "string",
+            "example": "Email is required"
+          },
+          "requestId": {
+            "type": "string",
+            "example": "req_9f3c1a7b2d04",
+            "description": "Also returned in the X-Request-Id header; quote it in bug reports."
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ]
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBody"
+          }
+        },
+        "required": [
+          "success",
+          "error"
+        ]
+      },
+      "SessionTokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT, 15 minute lifetime."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Opaque, 30 day lifetime, rotated on refresh."
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken"
+        ]
+      },
+      "SessionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "device": {
+            "type": "string",
+            "example": "Firefox on Windows"
+          },
+          "ip": {
+            "type": "string",
+            "example": "203.0.113.4"
+          },
+          "location": {
+            "type": "string",
+            "example": "unknown"
+          },
+          "lastActiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "current": {
+            "type": "boolean",
+            "description": "True for the session making this request."
+          }
+        },
+        "required": [
+          "id",
+          "device",
+          "ip",
+          "location",
+          "lastActiveAt",
+          "current"
+        ]
+      },
+      "OrgSettingsView": {
+        "type": "object",
+        "properties": {
+          "invitationPolicy": {
+            "type": "string",
+            "enum": [
+              "anyone",
+              "admins_only",
+              "owner_only"
+            ]
+          },
+          "defaultTimezone": {
+            "type": "string"
+          },
+          "defaultLanguage": {
+            "type": "string"
+          },
+          "externalCommunication": {
+            "type": "boolean"
+          },
+          "maxFileSizeMb": {
+            "type": "number"
+          },
+          "channelCreationPolicy": {
+            "type": "string",
+            "enum": [
+              "anyone",
+              "managers",
+              "admins_only"
+            ]
+          }
+        },
+        "required": [
+          "invitationPolicy",
+          "defaultTimezone",
+          "defaultLanguage",
+          "externalCommunication",
+          "maxFileSizeMb",
+          "channelCreationPolicy"
+        ]
+      },
+      "OrgView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "Derived from the name and unique across the install."
+          },
+          "industry": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "1-10",
+              "11-50",
+              "51-200",
+              "201-1000",
+              "1000+"
+            ]
+          },
+          "country": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "settings": {
+            "$ref": "#/components/schemas/OrgSettingsView"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "industry",
+          "size",
+          "country",
+          "timezone",
+          "logoUrl",
+          "settings"
+        ]
+      },
+      "MemberView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "manager",
+              "member"
+            ]
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "teamId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "userId",
+          "email",
+          "role",
+          "departmentId",
+          "teamId"
+        ]
+      },
+      "InvitationView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "manager",
+              "member"
+            ]
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "expired"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "email",
+          "role",
+          "departmentId",
+          "expiresAt",
+          "status"
+        ]
+      },
+      "DepartmentView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "level": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "name",
+          "description",
+          "parentId",
+          "level"
+        ]
+      },
+      "TeamView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orgId",
+          "departmentId",
+          "name",
+          "description"
+        ]
+      },
+      "MemberProfileView": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orgId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "presence": {
+            "type": "string",
+            "enum": [
+              "online",
+              "away",
+              "dnd",
+              "offline"
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "orgId",
+          "displayName",
+          "title",
+          "phone",
+          "avatarUrl",
+          "timezone",
+          "language",
+          "bio",
+          "presence"
+        ]
+      },
+      "UploadUrlResponse": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Pre-signed PUT target on the object store."
+          },
+          "publicUrl": {
+            "type": "string",
+            "description": "Where the object will be readable once uploaded."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "publicUrl"
+        ]
+      }
+    }
+  }
+}

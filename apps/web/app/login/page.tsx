@@ -19,7 +19,7 @@ export default function LoginPage() {
           const json = await send('/v1/auth/login', { email, password });
           if (json?.data) {
             storeTokens(json.data);
-            router.push('/sessions');
+            router.push('/orgs');
           }
         }}
       >
