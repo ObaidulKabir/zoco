@@ -1,5 +1,5 @@
 # Zoqo — Sprint Series to Completion
-## Document ID: ZOQO-SPRINTS-001 · Version 1.2 · August 2026
+## Document ID: ZOQO-SPRINTS-001 · Version 1.3 · August 2026
 
 | Field | Detail |
 |---|---|
@@ -206,7 +206,7 @@ Scenario: Stack starts with no vendor accounts
 - [ ] Audit events for login success/fail
 - [ ] Rate limit on `/v1/auth/*` (5 / 15 min / IP)
 - [ ] **Staging host provisioned; CI deploys `main` to staging.** QA §5 requires staging from the first sprint review, and QA §10 checks new `@P0` scenarios there
-- [ ] **OpenAPI document generated from the controllers and served at `/docs`** (Phase 1 exit criterion; cheap now, expensive to backfill)
+- [x] **OpenAPI document generated from the controllers and served at `/docs`** (Phase 1 exit criterion; cheap now, expensive to backfill)
 
 **BDD:** `@ORG-AUTH-001` through `@ORG-AUTH-005` (MFA may be `@P1`)
 
@@ -218,6 +218,9 @@ Scenario: Stack starts with no vendor accounts
 - [ ] Coverage ≥90% on `identity` domain/application
 - [ ] A restarted API still knows the users registered before the restart
 - [ ] Staging reachable, seeded, and green on the sprint's `@P0` scenarios
+
+> **Progress note (v1.3):** Sprint 1 core auth flows, persistence, Docker/runtime paths, OpenAPI, and CI checks are in place.  
+> `ORG-AUTH-003` (MFA, marked P1 in this plan) and "staging host provisioned" remain explicit rollout checks depending on host readiness.
 
 ---
 
@@ -241,20 +244,20 @@ Scenario: Stack starts with no vendor accounts
 
 **Build**
 
-- [ ] `org` module + membership + RBAC guard
-- [ ] **Migrations for `organizations`, `memberships`, `departments`, `teams`, `invitations`, `channels`, `member_profiles` (SRS §17.1) with `tenant_id` RLS policies**
-- [ ] Default channels created as rows (messaging behaviour in S4; rows exist now)
-- [ ] Switch-org in the web shell
-- [ ] Seed: two orgs, all roles, for later B2B — against the real database, so the running API sees it
+- [x] `org` module + membership + RBAC guard
+- [x] **Migrations for `organizations`, `memberships`, `departments`, `teams`, `invitations`, `channels`, `member_profiles` (SRS §17.1) with `tenant_id` RLS policies**
+- [x] Default channels created as rows (messaging behaviour in S4; rows exist now)
+- [x] Switch-org in the web shell
+- [x] Seed: two orgs, all roles, for later B2B — against the real database, so the running API sees it
 
 **Sprint exit**
 
-- [ ] User in two orgs; JWT/org header selects tenant
-- [ ] Second tenant cannot see Acme members
-- [ ] Journey 1 (§6.2) Playwright green
-- [ ] **Journey 10 (manage departments, teams and roles) Playwright green** — QA §8 Pack B requires J10 first-green in this sprint
-- [ ] **Invite expiry and CSV-junk scenarios automated** (QA §11, Sprint 2 row)
-- [ ] RLS proven: set `app.tenant_id` to Acme, query Nodi rows, get zero (QA §7.3)
+- [x] User in two orgs; JWT/org header selects tenant
+- [x] Second tenant cannot see Acme members
+- [x] Journey 1 (§6.2) Playwright green
+- [x] **Journey 10 (manage departments, teams and roles) Playwright green** — QA §8 Pack B requires J10 first-green in this sprint
+- [x] **Invite expiry and CSV-junk scenarios automated** (QA §11, Sprint 2 row)
+- [x] RLS proven: set `app.tenant_id` to Acme, query Nodi rows, get zero (QA §7.3)
 
 ---
 
@@ -685,3 +688,4 @@ This file may not silently contradict the SRS (`SYS-DEV-010`). Each row below is
 | 1.0 | August 2026 | Initial sprint series: S0–S12 detailed, S13–S48 outlined, aligned to SRS v1.3 |
 | 1.1 | August 2026 | Linked to ZOQO-SDP-001; Sprint 0 gated on SDP §12 |
 | 1.2 | August 2026 | Encryption envelope + X3DH moved S12 → S3; search scoped to channels only; S12 split into S12 (harden) and S12B (beta); Gantt made sequential and the S10 dependency corrected; migrations, staging, a11y, OpenAPI and RTM given sprint owners; S2 exit aligned to QA Pack B (J10, invite expiry, CSV junk); coverage/migration/OpenAPI/a11y promoted to standing rules; Phase 3 month arithmetic fixed; §11 amendment register added |
+| 1.3 | August 2026 | Progress update after latest development: Sprint 2 build and exit checklists marked complete (`journey-10`, invite expiry and CSV-junk automation, tenant-isolation/RLS proofs), Sprint 1 OpenAPI item marked complete, and Sprint 1 rollout caveat clarified (MFA P1 + staging host readiness). |
