@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AuthShell, Field, storeTokens, useAuthApi } from '../auth-ui';
@@ -37,7 +38,7 @@ export default function LoginPage() {
         </Button>
       </form>
       <p>
-        <a href="/forgot">Forgot password</a>
+        <Link href="/forgot">Forgot password</Link>
       </p>
     </AuthShell>
   );

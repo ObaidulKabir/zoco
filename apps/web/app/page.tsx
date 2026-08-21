@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Button } from '@zoqo/ui';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -8,13 +9,13 @@ export default function HomePage() {
       <h1>Zoqo</h1>
       <p>Sign in with email and password. No OAuth in Phase 1.</p>
       <p>
-        <a href="/register">Register</a>
+        <Link href="/register">Register</Link>
         {' · '}
-        <a href="/login">Login</a>
+        <Link href="/login">Login</Link>
         {' · '}
-        <a href="/orgs">Organizations</a>
+        <Link href="/orgs">Organizations</Link>
         {' · '}
-        <a href="/sessions">Sessions</a>
+        <Link href="/sessions">Sessions</Link>
       </p>
       <p>
         API: <a href={`${apiBase}/health`}>{apiBase}/health</a>
