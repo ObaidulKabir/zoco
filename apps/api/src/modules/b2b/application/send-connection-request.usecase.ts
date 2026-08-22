@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Clock } from '@zoqo/shared';
+import type { ClockPort } from '@zoqo/shared';
 import { B2bConnection } from '../domain/b2b-connection';
 import { B2bError } from '../domain/b2b-error';
 import type { B2bStorePort } from './ports/b2b-store.port';
@@ -18,7 +18,7 @@ export interface SendConnectionRequestCommand {
 export class SendConnectionRequestUseCase {
   constructor(
     private readonly store: B2bStorePort,
-    private readonly clock: Clock,
+    private readonly clock: ClockPort,
     private readonly audit?: AuditPort,
     private readonly notifier?: RealtimeNotifierPort,
   ) {}
@@ -69,11 +69,16 @@ export class SendConnectionRequestUseCase {
 
     if (this.audit) {
       await this.audit.record({
-        orgId: cmd.senderOrgId,
+        type: 'b2b.connection.requested',
         userId: cmd.senderUserId,
-        action: 'b2b.connection.requested',
-        targetId: conn.id,
-        metadata: { receiverOrgId: cmd.receiverOrgId },
+        email: null,
+        ip: 'internal',
+        at: now,
+        meta: {
+          orgId: cmd.senderOrgId,
+          receiverOrgId: cmd.receiverOrgId,
+          connectionId: conn.id,
+        },
       });
     }
 

@@ -283,10 +283,13 @@ describe('B2B Connection Use Cases (Sprint 5)', () => {
 
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({
-          orgId: orgA,
+          type: 'b2b.connection.requested',
           userId: userA,
-          action: 'b2b.connection.requested',
-          targetId: requested.id,
+          meta: expect.objectContaining({
+            orgId: orgA,
+            receiverOrgId: orgB,
+            connectionId: requested.id,
+          }),
         }),
       );
 
@@ -297,10 +300,13 @@ describe('B2B Connection Use Cases (Sprint 5)', () => {
       });
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({
-          orgId: orgB,
+          type: 'b2b.connection.accepted',
           userId: userB,
-          action: 'b2b.connection.accepted',
-          targetId: requested.id,
+          meta: expect.objectContaining({
+            orgId: orgB,
+            senderOrgId: orgA,
+            connectionId: requested.id,
+          }),
         }),
       );
 
@@ -311,10 +317,12 @@ describe('B2B Connection Use Cases (Sprint 5)', () => {
       });
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({
-          orgId: orgA,
+          type: 'b2b.connection.disconnected',
           userId: userA,
-          action: 'b2b.connection.disconnected',
-          targetId: requested.id,
+          meta: expect.objectContaining({
+            orgId: orgA,
+            connectionId: requested.id,
+          }),
         }),
       );
     });

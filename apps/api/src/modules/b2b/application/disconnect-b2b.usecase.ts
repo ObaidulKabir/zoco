@@ -1,4 +1,4 @@
-import type { Clock } from '@zoqo/shared';
+import type { ClockPort } from '@zoqo/shared';
 import { B2bError } from '../domain/b2b-error';
 import type { B2bStorePort } from './ports/b2b-store.port';
 import type { AuditPort } from '../../identity/application/ports/audit.port';
@@ -13,7 +13,7 @@ export interface DisconnectB2bCommand {
 export class DisconnectB2bUseCase {
   constructor(
     private readonly store: B2bStorePort,
-    private readonly clock: Clock,
+    private readonly clock: ClockPort,
     private readonly audit?: AuditPort,
   ) {}
 
@@ -32,16 +32,20 @@ export class DisconnectB2bUseCase {
       throw new B2bError('B2B_UNAUTHORIZED_ACTION', 'Cannot disconnect a connection that does not belong to your organization');
     }
 
+    const now = this.clock.now();
     await this.store.deleteConnection(conn.id);
 
     if (this.audit) {
       await this.audit.record({
-        orgId: cmd.orgId,
+        type: 'b2b.connection.disconnected',
         userId: cmd.userId,
-        action: 'b2b.connection.disconnected',
-        targetId: conn.id,
-        metadata: {
+        email: null,
+        ip: 'internal',
+        at: now,
+        meta: {
+          orgId: cmd.orgId,
           partnerOrgId: conn.senderOrgId === cmd.orgId ? conn.receiverOrgId : conn.senderOrgId,
+          connectionId: conn.id,
         },
       });
     }

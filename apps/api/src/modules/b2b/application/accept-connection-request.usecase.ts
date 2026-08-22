@@ -1,4 +1,4 @@
-import type { Clock } from '@zoqo/shared';
+import type { ClockPort } from '@zoqo/shared';
 import type { B2bConnection } from '../domain/b2b-connection';
 import { B2bError } from '../domain/b2b-error';
 import type { B2bStorePort } from './ports/b2b-store.port';
@@ -13,7 +13,7 @@ export interface AcceptConnectionCommand {
 export class AcceptConnectionRequestUseCase {
   constructor(
     private readonly store: B2bStorePort,
-    private readonly clock: Clock,
+    private readonly clock: ClockPort,
     private readonly audit?: AuditPort,
   ) {}
 
@@ -31,16 +31,22 @@ export class AcceptConnectionRequestUseCase {
       throw new B2bError('B2B_UNAUTHORIZED_ACTION', `Cannot accept connection request with status "${conn.status}"`);
     }
 
-    conn.accept(this.clock.now());
+    const now = this.clock.now();
+    conn.accept(now);
     await this.store.saveConnection(conn);
 
     if (this.audit) {
       await this.audit.record({
-        orgId: cmd.receiverOrgId,
+        type: 'b2b.connection.accepted',
         userId: cmd.receiverUserId,
-        action: 'b2b.connection.accepted',
-        targetId: conn.id,
-        metadata: { senderOrgId: conn.senderOrgId },
+        email: null,
+        ip: 'internal',
+        at: now,
+        meta: {
+          orgId: cmd.receiverOrgId,
+          senderOrgId: conn.senderOrgId,
+          connectionId: conn.id,
+        },
       });
     }
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Clock } from '@zoqo/shared';
+import type { ClockPort } from '@zoqo/shared';
 import { B2bConnection } from '../domain/b2b-connection';
 import { B2bError } from '../domain/b2b-error';
 import type { B2bStorePort } from './ports/b2b-store.port';
@@ -15,7 +15,7 @@ export interface BlockConnectionCommand {
 export class BlockConnectionRequestUseCase {
   constructor(
     private readonly store: B2bStorePort,
-    private readonly clock: Clock,
+    private readonly clock: ClockPort,
     private readonly audit?: AuditPort,
   ) {}
 
@@ -57,12 +57,15 @@ export class BlockConnectionRequestUseCase {
 
     if (this.audit) {
       await this.audit.record({
-        orgId: cmd.blockerOrgId,
+        type: 'b2b.connection.blocked',
         userId: cmd.blockerUserId,
-        action: 'b2b.connection.blocked',
-        targetId: conn.id,
-        metadata: {
+        email: null,
+        ip: 'internal',
+        at: now,
+        meta: {
+          orgId: cmd.blockerOrgId,
           blockedOrgId: conn.senderOrgId === cmd.blockerOrgId ? conn.receiverOrgId : conn.senderOrgId,
+          connectionId: conn.id,
         },
       });
     }

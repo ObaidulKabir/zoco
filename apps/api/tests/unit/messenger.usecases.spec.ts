@@ -120,7 +120,7 @@ describe('Messenger Use Cases', () => {
         recipientId: 'user-tanaka',
       });
 
-      expect(conv.type).toBe('b2b_direct');
+      expect(conv.type).toBe('b2b_dm');
       expect(conv.participants[1].orgId).toBe('org-tokyo-corp');
     });
 

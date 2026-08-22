@@ -52,11 +52,11 @@ export class GetOrCreateDmUseCase {
       return existing;
     }
 
-    let recipientOrgId = cmd.orgId;
+    let recipientOrgId: string = cmd.orgId;
     if (this.membershipChecker?.findOrgsForUser) {
       const recipientOrgIds = await this.membershipChecker.findOrgsForUser(cmd.recipientId);
       if (recipientOrgIds.length > 0 && !recipientOrgIds.includes(cmd.orgId)) {
-        recipientOrgId = recipientOrgIds[0];
+        recipientOrgId = recipientOrgIds[0] || cmd.orgId;
       }
     }
 
@@ -64,7 +64,7 @@ export class GetOrCreateDmUseCase {
     const conv: Conversation = {
       id: randomUUID(),
       orgId: cmd.orgId,
-      type: recipientOrgId !== cmd.orgId ? 'b2b_direct' : 'dm',
+      type: recipientOrgId !== cmd.orgId ? 'b2b_dm' : 'dm',
       createdBy: cmd.requesterId,
       participants: [
         {

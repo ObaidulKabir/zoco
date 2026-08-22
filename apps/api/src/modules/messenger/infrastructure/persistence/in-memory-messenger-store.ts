@@ -25,7 +25,7 @@ export class InMemoryMessengerStore implements MessengerStorePort {
   async findDirectConversation(orgId: string, userA: string, userB: string): Promise<Conversation | null> {
     for (const conv of this.conversations.values()) {
       const hasOrgAccess = conv.orgId === orgId || conv.participants.some((p) => p.orgId === orgId);
-      if (hasOrgAccess && (conv.type === 'dm' || conv.type === 'b2b_direct')) {
+      if (hasOrgAccess && (conv.type === 'dm' || conv.type === 'b2b_dm')) {
         const participantIds = conv.participants.map((p) => p.userId);
         if (participantIds.includes(userA) && participantIds.includes(userB)) {
           return JSON.parse(JSON.stringify(conv));
