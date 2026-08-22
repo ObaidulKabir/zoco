@@ -43,7 +43,7 @@ export class PgMessengerStore implements MessengerStorePort {
       }>('select * from conversations where id = $1 and org_id = $2', [id, orgId]);
 
       if (convRes.rows.length === 0) return null;
-      const row = convRes.rows[0];
+      const row = convRes.rows[0]!;
 
       const partRes = await client.query<{
         user_id: string;
@@ -83,7 +83,7 @@ export class PgMessengerStore implements MessengerStorePort {
       );
 
       if (res.rows.length === 0) return null;
-      return this.findConversationById(orgId, res.rows[0].id);
+      return this.findConversationById(orgId, res.rows[0]!.id);
     });
   }
 
@@ -210,7 +210,7 @@ export class PgMessengerStore implements MessengerStorePort {
       }>('select * from messages where id = $1 and org_id = $2', [id, orgId]);
 
       if (res.rows.length === 0) return null;
-      const row = res.rows[0];
+      const row = res.rows[0]!;
 
       return {
         id: row.id,
@@ -446,7 +446,7 @@ export class PgMessengerStore implements MessengerStorePort {
       }>('select * from prekey_bundles where user_id = $1', [userId]);
 
       if (res.rows.length === 0) return null;
-      const row = res.rows[0];
+      const row = res.rows[0]!;
 
       return {
         userId: row.user_id,
@@ -481,7 +481,7 @@ export class PgMessengerStore implements MessengerStorePort {
           return null;
         }
 
-        const row = res.rows[0];
+        const row = res.rows[0]!;
         const otps = Array.isArray(row.one_time_prekeys)
           ? row.one_time_prekeys
           : typeof row.one_time_prekeys === 'string'

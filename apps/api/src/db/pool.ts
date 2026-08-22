@@ -62,3 +62,12 @@ export const withTenant = async <T>(tenantId: string, fn: (client: PoolClient) =
       throw error;
     }
   });
+
+/**
+ * Backward-compatible tenant wrapper used by older persistence adapters.
+ * Null means "no tenant scoping required" and runs with a plain pooled client.
+ */
+export const withTenantClient = async <T>(
+  tenantId: string | null,
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> => (tenantId ? withTenant(tenantId, fn) : withClient(fn));

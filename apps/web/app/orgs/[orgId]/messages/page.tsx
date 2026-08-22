@@ -252,7 +252,7 @@ export default function MessagesPage() {
                         fontSize: '15px',
                       }}
                     >
-                      {peer?.displayName ? peer.displayName[0].toUpperCase() : 'U'}
+                      {peer?.displayName?.[0]?.toUpperCase() ?? 'U'}
                     </div>
                     <span
                       style={{

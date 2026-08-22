@@ -384,7 +384,7 @@ export default function ChannelsPage() {
                 messages.map((m) => (
                   <div key={m.id} className="group flex space-x-3 p-2 rounded-lg hover:bg-slate-900/50 transition">
                     <div className="w-8 h-8 rounded-full bg-indigo-800 flex items-center justify-center font-bold text-xs text-indigo-200">
-                      {m.senderName ? m.senderName[0].toUpperCase() : 'U'}
+                      {m.senderName?.[0]?.toUpperCase() ?? 'U'}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-baseline space-x-2">

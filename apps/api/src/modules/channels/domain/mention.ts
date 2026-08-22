@@ -14,7 +14,7 @@ export function parseMentions(text: string): ParsedMention[] {
 
   while ((match = regex.exec(text)) !== null) {
     const raw = match[0];
-    const identifier = match[1].toLowerCase();
+    const identifier = (match[1] ?? '').toLowerCase();
 
     if (identifier === 'channel' || identifier === 'all' || identifier === 'everyone') {
       mentions.push({ raw, type: 'channel' });
@@ -23,7 +23,7 @@ export function parseMentions(text: string): ParsedMention[] {
     } else if (['admin', 'admins', 'manager', 'managers', 'owner'].includes(identifier)) {
       mentions.push({ raw, type: 'role', target: identifier });
     } else {
-      mentions.push({ raw, type: 'user', target: match[1] });
+      mentions.push({ raw, type: 'user', target: match[1] ?? '' });
     }
   }
 
