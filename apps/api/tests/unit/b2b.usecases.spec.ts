@@ -8,6 +8,7 @@ import { DisconnectB2bUseCase } from '../../src/modules/b2b/application/disconne
 import { CheckB2bConnectionUseCase } from '../../src/modules/b2b/application/check-b2b-connection.usecase';
 import { ListB2bConnectionsUseCase } from '../../src/modules/b2b/application/list-b2b-connections.usecase';
 import { B2bError } from '../../src/modules/b2b/domain/b2b-error';
+import type { AuditPort } from '../../src/modules/identity/application/ports/audit.port';
 
 describe('B2B Connection Use Cases (Sprint 5)', () => {
   let store: InMemoryB2bStore;
@@ -262,6 +263,60 @@ describe('B2B Connection Use Cases (Sprint 5)', () => {
       const pendingOnly = await listConn.execute(orgA, 'pending');
       expect(pendingOnly.length).toBe(1);
       expect(pendingOnly[0].id).toBe(c2.id);
+    });
+  });
+
+  describe('Audit events', () => {
+    it('records audit events for request, accept, and disconnect', async () => {
+      const audit: AuditPort = { record: jest.fn(async () => undefined) };
+
+      const sendWithAudit = new SendConnectionRequestUseCase(store, clock, audit);
+      const acceptWithAudit = new AcceptConnectionRequestUseCase(store, clock, audit);
+      const disconnectWithAudit = new DisconnectB2bUseCase(store, clock, audit);
+
+      const requested = await sendWithAudit.execute({
+        senderOrgId: orgA,
+        senderUserId: userA,
+        receiverOrgId: orgB,
+        introMessage: 'Please connect for external collaboration',
+      });
+
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: orgA,
+          userId: userA,
+          action: 'b2b.connection.requested',
+          targetId: requested.id,
+        }),
+      );
+
+      await acceptWithAudit.execute({
+        connectionId: requested.id,
+        receiverOrgId: orgB,
+        receiverUserId: userB,
+      });
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: orgB,
+          userId: userB,
+          action: 'b2b.connection.accepted',
+          targetId: requested.id,
+        }),
+      );
+
+      await disconnectWithAudit.execute({
+        connectionId: requested.id,
+        orgId: orgA,
+        userId: userA,
+      });
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: orgA,
+          userId: userA,
+          action: 'b2b.connection.disconnected',
+          targetId: requested.id,
+        }),
+      );
     });
   });
 });

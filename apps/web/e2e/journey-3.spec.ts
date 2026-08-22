@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mailpitEnabled, waitForOtp } from './support/mailpit';
 
 type Json = Record<string, unknown>;
 const apiBase = process.env.E2E_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
@@ -14,7 +15,7 @@ const api = async (
   const res = await request.fetch(`${apiBase}${path}`, {
     method,
     headers: {
-      authorization: `Bearer ${accessToken}`,
+      ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
       ...(orgId ? { 'x-org-id': orgId } : {}),
       'content-type': 'application/json',
     },
@@ -24,7 +25,7 @@ const api = async (
   return { res, json };
 };
 
-test('journey 3: B2B cross-org connect, external messaging, and isolation @journey-3 @P0', async ({ page, request }) => {
+test('journey 3: B2B cross-org connect, external messaging, and isolation @journey-3 @P0', async ({ request }) => {
   test.setTimeout(90_000);
 
   const stamp = Date.now();
@@ -32,23 +33,14 @@ test('journey 3: B2B cross-org connect, external messaging, and isolation @journ
   const tokyoOwnerEmail = `tanaka${stamp}@tokyo.test`;
   const password = 'CorrectH0rse!';
 
-  // 1. Register Acme Owner
-  await page.goto('/register');
-  await page.getByLabel('Full name').fill('Rahim Acme');
-  await page.getByLabel('Email').fill(acmeOwnerEmail);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Register' }).click();
-  await expect(page.getByRole('heading', { name: 'Verify email' })).toBeVisible();
-  const acmeOtp = page.url().includes('otp=')
-    ? new URL(page.url()).searchParams.get('otp') ?? ''
-    : await page.getByLabel('OTP').inputValue();
-  if (!acmeOtp) throw new Error('Acme OTP not available');
-  await page.getByLabel('OTP').fill(acmeOtp);
-  await page.getByRole('button', { name: 'Verify' }).click();
-  await page.waitForURL('**/orgs');
-
-  const acmeToken = await page.evaluate(() => sessionStorage.getItem('zoqo.access') ?? '');
-  if (!acmeToken) throw new Error('acme access token missing');
+  // 1. Register and verify Acme owner through the API to avoid UI transport
+  // assumptions; this journey validates B2B behavior, not auth page rendering.
+  const acme = await registerAndVerify(request, {
+    name: 'Rahim Acme',
+    email: acmeOwnerEmail,
+    password,
+  });
+  const acmeToken = acme.accessToken;
 
   // Create Acme Corp
   const createAcmeOrg = await api(request, 'POST', '/v1/orgs', acmeToken, undefined, {
@@ -62,21 +54,14 @@ test('journey 3: B2B cross-org connect, external messaging, and isolation @journ
   const acmeOrgId = ((createAcmeOrg.json as any)?.data?.organization?.id || (createAcmeOrg.json as any)?.data?.id) as string;
   expect(acmeOrgId).toBeTruthy();
 
-  // 2. Register Tokyo Corp Owner via API
-  const regTokyo = await api(request, 'POST', '/v1/auth/register', '', undefined, {
+  // 2. Register Tokyo Corp owner
+  const tokyo = await registerAndVerify(request, {
     name: 'Tanaka Tokyo',
     email: tokyoOwnerEmail,
     password,
   });
-  expect(regTokyo.res.status()).toBe(201);
-  const tokyoOtp = ((regTokyo.json as any)?.data?.otp as string) ?? '';
-
-  const verTokyo = await api(request, 'POST', '/v1/auth/verify-email', '', undefined, {
-    email: tokyoOwnerEmail,
-    otp: tokyoOtp || '123456',
-  });
-  const tokyoToken = ((verTokyo.json as any)?.data?.accessToken as string) ?? '';
-  const tokyoUserId = ((verTokyo.json as any)?.data?.user?.id as string) ?? '';
+  const tokyoToken = tokyo.accessToken;
+  const tokyoUserId = tokyo.userId;
 
   const createTokyoOrg = await api(request, 'POST', '/v1/orgs', tokyoToken, undefined, {
     name: `Tokyo Corp ${stamp}`,
@@ -126,3 +111,30 @@ test('journey 3: B2B cross-org connect, external messaging, and isolation @journ
   const disconnect = await api(request, 'DELETE', `/v1/b2b/connections/${connId}`, acmeToken, acmeOrgId);
   expect(disconnect.res.status()).toBe(200);
 });
+
+async function registerAndVerify(
+  request: import('@playwright/test').APIRequestContext,
+  input: { name: string; email: string; password: string },
+): Promise<{ accessToken: string; userId: string }> {
+  const register = await api(request, 'POST', '/v1/auth/register', '', undefined, input);
+  expect(register.res.status()).toBe(201);
+  const embeddedOtp =
+    ((register.json as any)?.data?.verificationCode as string | undefined) ??
+    ((register.json as any)?.data?.otp as string | undefined) ??
+    '';
+  const otp = embeddedOtp || (mailpitEnabled() ? await waitForOtp(input.email) : '');
+  if (!otp) {
+    throw new Error('No OTP available: set MAILPIT_URL, or run local API with E2E_EXPOSE_OTP=1.');
+  }
+
+  const verify = await api(request, 'POST', '/v1/auth/verify-email', '', undefined, {
+    email: input.email,
+    otp,
+  });
+  expect([200, 201]).toContain(verify.res.status());
+  const accessToken = ((verify.json as any)?.data?.accessToken as string) ?? '';
+  const userId = ((verify.json as any)?.data?.user?.id as string) ?? '';
+  expect(accessToken).toBeTruthy();
+  expect(userId).toBeTruthy();
+  return { accessToken, userId };
+}
