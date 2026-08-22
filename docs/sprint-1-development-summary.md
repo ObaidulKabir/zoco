@@ -1,60 +1,67 @@
 # Sprint 1 Development Summary
 
-## Scope Completed
+## Sprint 1 Scope Delivered
 
 ### Identity and Authentication (`apps/api`)
 
-- User registration with email and password
-- Email verification flow using OTP
-- Login with JWT access and refresh tokens
-- Refresh token rotation
-- Logout and session revocation
-- Forgot-password and reset-password flow
-- Session listing for active sessions
+- User registration with email/password
+- Email verification with OTP
+- Login with JWT access/refresh tokens
+- Refresh rotation and logout/revoke flows
+- Forgot/reset password flows
+- Session listing and revocation
 
 ### Security and API Behavior
 
-- Password hashing with `bcrypt`
-- JWT guard protection on secured endpoints
-- Standardized API error envelope and status mapping
+- `bcrypt` password hashing
+- JWT guard protection on secured routes
+- Standardized API envelope + HTTP status mapping
 - Request ID propagation in error responses
-- Authentication rate-limiting guard for abuse control
+- Auth endpoint rate-limit guard
 
-### Persistence and Database Work
+### Persistence, Documentation, and Delivery
 
-- Migration from in-memory identity persistence to PostgreSQL adapters
-- SQL migration runner and migration files added
-- Application DB role uses non-superuser `zoqo_app`
-- Tenant-isolation pattern enforced with RLS-aware design
+- Identity persistence moved from in-memory to PostgreSQL adapters
+- SQL migration runner + migration files
+- App DB role set to non-superuser (`zoqo_app`) with RLS-aware tenant model
+- OpenAPI generated/served at `/docs` and `/docs/openapi.json`
+- CI check for OpenAPI drift added
+- API/Web Docker runtime paths validated
+- Staging compose/workflow prepared
 
-### Web Authentication Flows (`apps/web`)
+## Post-Sprint-1 Development Update
 
-- Register page
-- Verify email page
-- Login page
-- Forgot password page
-- Reset password page
-- Token/session integration with backend auth APIs
+### Sprint 2 (Organization) — Delivered
 
-### Documentation and QA
+- `org` module implemented with memberships, RBAC guard, departments, teams, profiles, and settings
+- Organization migrations + tenant-scoped RLS coverage added
+- Org shell/switching flows in web app delivered
+- Sprint 2 QA exit automations are in place:
+  - `Journey 1` Playwright green
+  - `Journey 10` Playwright green
+  - Invite expiry scenario automated
+  - CSV junk/invalid invite scenario automated
+  - RLS isolation proof present in persistence integration tests
 
-- Auth BDD scenarios added/extended under `features/identity`
-- Unit and integration test coverage for identity/auth use cases
-- OpenAPI/Swagger documentation generation and serving at:
-  - `/docs`
-  - `/docs/openapi.json`
-- CI check added to enforce OpenAPI documentation currency
+### Sprint 3 (Messenger / DMs) — Delivered in code
 
-### Delivery and Runtime Readiness
+- Direct messaging module landed with:
+  - conversation/message use cases
+  - message actions
+  - typing/read/presence support paths
+  - encrypted envelope + X3DH prekey bundle primitives
+- BDD coverage added under `features/messenger`
+- Web DM pages added under `apps/web/app/orgs/[orgId]/messages`
 
-- API and Web Docker build/runtime paths prepared and validated
-- Staging deployment stack and workflow prepared
-- Smoke-capable E2E path available against deployed environment
+### Sprint 4 (Channels + Media) — Delivered in code
 
-## Pending / Clarification for Sprint Closure
+- Channel and thread APIs/use cases implemented
+- Mentions support and shared-channel scenarios added
+- Media pipeline modules and flows introduced
+- BDD coverage added under `features/channels`
 
-- MFA/TOTP is still pending if it is part of Sprint 1 exit criteria in your sprint plan.
-- Therefore:
-  - Core identity/auth deliverables are completed.
-  - Full Sprint 1 closure depends on whether MFA is mandatory in your official Sprint 1 definition.
+## Current Note on Sprint 1 Closure
+
+- Core Sprint 1 auth deliverables are complete.
+- `ORG-AUTH-003` (MFA/TOTP) is tracked as P1 in the sprint plan and remains a separate closure/promotion decision.
 
