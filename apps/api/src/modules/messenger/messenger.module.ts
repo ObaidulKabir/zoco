@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { isPostgresEnabled } from '../../db/pool';
 import { IdentityModule } from '../identity/identity.module';
 import { OrgModule } from '../org/org.module';
@@ -23,9 +23,11 @@ import { PgMessengerStore } from './infrastructure/persistence/pg-messenger-stor
 import { InMemoryRealtimeNotifier } from './infrastructure/realtime/in-memory-realtime-notifier';
 import { MessengerController } from './infrastructure/http/messenger.controller';
 import { ORG_DIRECTORY } from '../org/org.tokens';
-import type { OrgDirectoryPort } from '../org/application/ports/org-directory.port';
+import { CheckB2bConnectionUseCase } from '../b2b/application/check-b2b-connection.usecase';
 import { MESSENGER_STORE, REALTIME_NOTIFIER } from './messenger.tokens';
+import { OrgDirectoryPort } from '../org/application/ports/org-directory.port';
 
+@Global()
 @Module({
   imports: [IdentityModule, OrgModule],
   controllers: [MessengerController],
@@ -42,11 +44,19 @@ import { MESSENGER_STORE, REALTIME_NOTIFIER } from './messenger.tokens';
     },
     {
       provide: GetOrCreateDmUseCase,
-      useFactory: (store: MessengerStorePort, clock: NestSystemClock, orgs: OrgDirectoryPort) =>
+      useFactory: (
+        store: MessengerStorePort,
+        clock: NestSystemClock,
+        orgs: OrgDirectoryPort,
+        b2bChecker?: CheckB2bConnectionUseCase,
+      ) =>
         new GetOrCreateDmUseCase(store, clock, {
           isMember: async (orgId, userId) => !!(await orgs.findMembership(orgId, userId)),
+          findOrgsForUser: async (userId) => (await orgs.listOrgsForUser(userId)).map((o) => o.id),
+          areOrgsConnected: async (orgAId, orgBId) =>
+            b2bChecker ? await b2bChecker.areConnected(orgAId, orgBId) : false,
         }),
-      inject: [MESSENGER_STORE, NestSystemClock, ORG_DIRECTORY],
+      inject: [MESSENGER_STORE, NestSystemClock, ORG_DIRECTORY, { token: CheckB2bConnectionUseCase, optional: true }],
     },
     {
       provide: SendDmUseCase,

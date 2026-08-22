@@ -6,8 +6,10 @@ This checklist is the concrete go/no-go gate before declaring Sprint 3 QA comple
 
 ## 1) Required automated evidence
 
-- [ ] BDD messenger pack green (`MSG-DM-*`, `SHIELD-CORE-001`)
+- [x] BDD messenger pack green (`MSG-DM-*`, `SHIELD-CORE-001`)
   - Command: `pnpm test:bdd`
+  - Evidence: CI `verify` job success in run `32588358264`  
+    <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97068065305>
   - Primary evidence files:
     - `features/messenger/MSG-DM-001-direct-message.feature`
     - `features/messenger/MSG-DM-002-message-actions.feature`
@@ -16,13 +18,16 @@ This checklist is the concrete go/no-go gate before declaring Sprint 3 QA comple
     - `features/messenger/MSG-DM-005-presence.feature`
     - `features/messenger/SHIELD-CORE-001-e2ee-envelope.feature`
 
-- [ ] Journey 2 (DM part) Playwright green
+- [x] Journey 2 (DM part) Playwright green
   - Command: `pnpm test:journey2`
   - Test file: `apps/web/e2e/journey-2.spec.ts`
+  - Evidence: CI `e2e` job success in run `32588358264`  
+    <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97070512461>
 
 - [ ] Local WS load smoke: 100 concurrent connections
   - Command: `pnpm test:ws:smoke`
   - Script: `scripts/ws-load-smoke.mjs`
+  - Latest local attempt (2026-08-23): `opened=0/100, failed=100` (failed)
   - Defaults:
     - `WS_SMOKE_CLIENTS=100`
     - `WS_SMOKE_OPEN_TIMEOUT_MS=12000`
@@ -34,16 +39,16 @@ This checklist is the concrete go/no-go gate before declaring Sprint 3 QA comple
 
 ## 2) Exit criteria mapping (Sprint plan)
 
-- [ ] Offline reconnect delivers missed messages  
+- [x] Offline reconnect delivers missed messages  
       Verified by `MSG-DM-001` offline reconnect scenario.
 
-- [ ] Journey 2 (DM part) green  
+- [x] Journey 2 (DM part) green  
       Verified by `apps/web/e2e/journey-2.spec.ts`.
 
 - [ ] Load smoke: 100 concurrent WS connections locally  
       Verified by `scripts/ws-load-smoke.mjs` pass output.
 
-- [ ] DM row contains no plaintext (QA Pack C)  
+- [x] DM row contains no plaintext (QA Pack C)  
       Verified by `SHIELD-CORE-001` envelope/ciphertext scenarios.
 
 ## 3) Operator notes
@@ -57,9 +62,18 @@ This checklist is the concrete go/no-go gate before declaring Sprint 3 QA comple
 
 ## 4) Sign-off record
 
-- [ ] Date/time:
-- [ ] Engineer:
-- [ ] Commands run:
-- [ ] Evidence links (CI run IDs / local logs):
-- [ ] Decision: PASS / FAIL
+- [x] Date/time: 2026-08-23 00:10 (UTC+6)
+- [x] Engineer: HP + Cursor assistant
+- [x] Commands run:
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm test:ws:smoke` (local; failed)
+  - CI run reference for commit `d522c1a`
+- [x] Evidence links (CI run IDs / local logs):
+  - CI run (all jobs green): <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264>
+  - Verify job (includes `pnpm test:bdd`): <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97068065305>
+  - E2E job (includes Journey 2): <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97070512461>
+  - Images job: <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97070512437>
+  - Security job: <https://github.com/ObaidulKabir/zoco/actions/runs/32588358264/job/97068065188>
+- [x] Decision: FAIL (pending required local WS smoke pass at 100 concurrent clients)
 

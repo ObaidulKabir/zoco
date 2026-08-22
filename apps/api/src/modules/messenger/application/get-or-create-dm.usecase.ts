@@ -6,6 +6,8 @@ import type { MessengerStorePort } from './ports/messenger-store.port';
 
 export interface MembershipCheckerPort {
   isMember(orgId: string, userId: string): Promise<boolean>;
+  findOrgsForUser?(userId: string): Promise<string[]>;
+  areOrgsConnected?(orgAId: string, orgBId: string): Promise<boolean>;
 }
 
 export interface GetOrCreateDmCommand {
@@ -29,7 +31,19 @@ export class GetOrCreateDmUseCase {
     if (this.membershipChecker) {
       const isMember = await this.membershipChecker.isMember(cmd.orgId, cmd.recipientId);
       if (!isMember) {
-        throw new MessengerError('CROSS_TENANT_FORBIDDEN', 'Recipient is not a member of this organization');
+        let isB2b = false;
+        if (this.membershipChecker.findOrgsForUser && this.membershipChecker.areOrgsConnected) {
+          const recipientOrgIds = await this.membershipChecker.findOrgsForUser(cmd.recipientId);
+          for (const targetOrgId of recipientOrgIds) {
+            if (await this.membershipChecker.areOrgsConnected(cmd.orgId, targetOrgId)) {
+              isB2b = true;
+              break;
+            }
+          }
+        }
+        if (!isB2b) {
+          throw new MessengerError('CROSS_TENANT_FORBIDDEN', 'Recipient is not a member of this organization');
+        }
       }
     }
 
@@ -38,11 +52,19 @@ export class GetOrCreateDmUseCase {
       return existing;
     }
 
+    let recipientOrgId = cmd.orgId;
+    if (this.membershipChecker?.findOrgsForUser) {
+      const recipientOrgIds = await this.membershipChecker.findOrgsForUser(cmd.recipientId);
+      if (recipientOrgIds.length > 0 && !recipientOrgIds.includes(cmd.orgId)) {
+        recipientOrgId = recipientOrgIds[0];
+      }
+    }
+
     const now = this.clock.now();
     const conv: Conversation = {
       id: randomUUID(),
       orgId: cmd.orgId,
-      type: 'dm',
+      type: recipientOrgId !== cmd.orgId ? 'b2b_direct' : 'dm',
       createdBy: cmd.requesterId,
       participants: [
         {
@@ -53,7 +75,7 @@ export class GetOrCreateDmUseCase {
         },
         {
           userId: cmd.recipientId,
-          orgId: cmd.orgId,
+          orgId: recipientOrgId,
           joinedAt: now,
           isMuted: false,
         },

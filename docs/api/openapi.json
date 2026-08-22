@@ -2648,6 +2648,228 @@
           "Media"
         ]
       }
+    },
+    "/v1/b2b/connections": {
+      "post": {
+        "operationId": "B2bController_sendConnection",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a B2B connection request with an introduction",
+        "tags": [
+          "B2B"
+        ]
+      },
+      "get": {
+        "operationId": "B2bController_listConnections",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "pending",
+                "accepted",
+                "rejected",
+                "blocked"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List B2B connections for active organization",
+        "tags": [
+          "B2B"
+        ]
+      }
+    },
+    "/v1/b2b/connections/{id}/accept": {
+      "post": {
+        "operationId": "B2bController_acceptConnection",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept a B2B connection request",
+        "tags": [
+          "B2B"
+        ]
+      }
+    },
+    "/v1/b2b/connections/{id}/reject": {
+      "post": {
+        "operationId": "B2bController_rejectConnection",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a B2B connection request",
+        "tags": [
+          "B2B"
+        ]
+      }
+    },
+    "/v1/b2b/connections/{id}/block": {
+      "post": {
+        "operationId": "B2bController_blockConnection",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block a B2B connection request by connection ID",
+        "tags": [
+          "B2B"
+        ]
+      }
+    },
+    "/v1/b2b/connections/block": {
+      "post": {
+        "operationId": "B2bController_blockOrg",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block an organization by target org ID",
+        "tags": [
+          "B2B"
+        ]
+      }
+    },
+    "/v1/b2b/connections/{id}": {
+      "delete": {
+        "operationId": "B2bController_disconnect",
+        "parameters": [
+          {
+            "name": "x-org-id",
+            "in": "header",
+            "description": "Active organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Disconnect an active B2B connection",
+        "tags": [
+          "B2B"
+        ]
+      }
     }
   },
   "info": {

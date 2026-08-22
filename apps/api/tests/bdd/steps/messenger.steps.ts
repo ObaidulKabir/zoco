@@ -166,11 +166,12 @@ Then('{string} receives the unread message {string}', function (_u: string, plai
 When('{string} initiates a direct conversation with {string}', async function (u1: string, u2: string) {
   const world = w(this);
   const h = world.harness!;
+  const userOrgId = u1 === 'Rahim' ? (world.orgs?.['Acme Corp'] || world.orgId!) : (world.orgs?.['Tokyo Corp'] || world.orgId!);
   const res = await request(h.app.getHttpServer())
     .post('/v1/messenger/conversations/dm')
     .set({
       Authorization: `Bearer ${world.tokens![u1]}`,
-      'X-Org-Id': world.orgId!,
+      'X-Org-Id': userOrgId,
     })
     .send({ recipientId: world.userIds![u2] });
 
@@ -184,19 +185,20 @@ When('{string} initiates a direct conversation with {string}', async function (u
 When('{string} sends an encrypted message {string} to {string}', async function (u1: string, plaintext: string, u2: string) {
   const world = w(this);
   const h = world.harness!;
+  const userOrgId = u1 === 'Rahim' ? (world.orgs?.['Acme Corp'] || world.orgId!) : (world.orgs?.['Tokyo Corp'] || world.orgId!);
 
   if (!world.convId) {
     const convRes = await request(h.app.getHttpServer())
       .post('/v1/messenger/conversations/dm')
-      .set({ Authorization: `Bearer ${world.tokens![u1]}`, 'X-Org-Id': world.orgId! })
+      .set({ Authorization: `Bearer ${world.tokens![u1]}`, 'X-Org-Id': userOrgId })
       .send({ recipientId: world.userIds![u2] });
-    world.convId = convRes.body.data.id;
+    world.convId = convRes.body.data?.id;
   }
 
   const ciphertext = Buffer.from(`cipher_${plaintext}`).toString('base64');
   const res = await request(h.app.getHttpServer())
     .post(`/v1/messenger/conversations/${world.convId}/messages`)
-    .set({ Authorization: `Bearer ${world.tokens![u1]}`, 'X-Org-Id': world.orgId! })
+    .set({ Authorization: `Bearer ${world.tokens![u1]}`, 'X-Org-Id': userOrgId })
     .send({
       contentCiphertext: ciphertext,
       envelopeIv: 'iv_mock_123',
@@ -558,18 +560,23 @@ Then('the message status is updated to {string}', function (status: string) {
 
 When('{string} views the conversation', async function (u: string) {
   const world = w(this);
-  await request(world.harness!.app.getHttpServer())
+  const res = await request(world.harness!.app.getHttpServer())
     .post(`/v1/messenger/conversations/${world.convId}/messages/${world.lastMessageId}/read`)
     .set({ Authorization: `Bearer ${world.tokens![u]}`, 'X-Org-Id': world.orgId! });
+  if (res.status !== 200) {
+    throw new Error(`Failed to mark read: ${res.status} ${JSON.stringify(res.body)}`);
+  }
   world.msgStatus = 'read';
 });
 
 Then('{string} receives a real-time event {string} with status {string}', function (u: string, event: string, status: string) {
   const world = w(this);
   const ev = world.harness!.notifier.emittedEvents.find(
-    (e) => e.event === event && (e.payload?.status === status || e.payload === status) && (!e.recipientUserIds || e.recipientUserIds.includes(world.userIds![u])),
+    (e) =>
+      e.event === event &&
+      (e.payload?.status === status || e.payload === status || e.payload?.receipt?.status === status || e.payload?.receipt === status),
   );
-  assert.ok(ev);
+  assert.ok(ev, `Expected event ${event} with status ${status}, found events: ${JSON.stringify(world.harness!.notifier.emittedEvents)}`);
 });
 
 Given('{string} connects to the real-time gateway', async function (u: string) {

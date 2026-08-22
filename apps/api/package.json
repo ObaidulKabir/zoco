@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "jest --config jest.config.cjs --coverage --collectCoverageFrom=src/modules/**/domain/**/*.ts --collectCoverageFrom=src/modules/**/application/**/*.ts",
     "test:int": "jest --config jest.int.cjs --passWithNoTests",
-    "test:bdd": "cucumber-js --config cucumber.cjs --exit",
+    "test:bdd": "cucumber-js --config cucumber.cjs",
     "seed": "tsx src/seed.ts",
     "migrate": "tsx src/migrate.ts",
     "openapi": "tsx src/generate-openapi.ts",

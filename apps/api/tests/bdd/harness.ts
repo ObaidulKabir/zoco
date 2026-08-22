@@ -26,6 +26,8 @@ import { InMemoryMediaStore } from '../../src/modules/media/infrastructure/persi
 import { InMemoryStorageAdapter } from '../../src/modules/media/infrastructure/storage/in-memory-storage.adapter';
 import { InMemoryScannerAdapter } from '../../src/modules/media/infrastructure/scanner/in-memory-scanner.adapter';
 import { MEDIA_STORE, STORAGE_ADAPTER, VIRUS_SCANNER } from '../../src/modules/media/media.tokens';
+import { InMemoryB2bStore } from '../../src/modules/b2b/infrastructure/persistence/in-memory-b2b-store';
+import { B2B_STORE } from '../../src/modules/b2b/b2b.tokens';
 
 export type Harness = {
   app: INestApplication;
@@ -41,6 +43,7 @@ export type Harness = {
   media: InMemoryMediaStore;
   storage: InMemoryStorageAdapter;
   scanner: InMemoryScannerAdapter;
+  b2b: InMemoryB2bStore;
   rateLimiter: AuthRateLimiter;
 };
 
@@ -57,9 +60,12 @@ export const getHarness = async (): Promise<Harness> => {
   process.env.PERSISTENCE = 'memory';
   process.env.AUTH_RATE_LIMIT = RELAXED_AUTH_RATE_LIMIT;
   const mailer = new InMemoryMailer();
+  const notifier = new InMemoryRealtimeNotifier();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(MAILER)
     .useValue(mailer)
+    .overrideProvider(REALTIME_NOTIFIER)
+    .useValue(notifier)
     .compile();
   const app = moduleRef.createNestApplication();
   app.useLogger(false);
@@ -73,11 +79,12 @@ export const getHarness = async (): Promise<Harness> => {
     orgs: moduleRef.get<InMemoryOrgDirectory>(ORG_DIRECTORY),
     invitations: moduleRef.get<InMemoryInvitationRegistry>(INVITATION_REGISTRY),
     messenger: moduleRef.get<InMemoryMessengerStore>(MESSENGER_STORE),
-    notifier: moduleRef.get<InMemoryRealtimeNotifier>(REALTIME_NOTIFIER),
+    notifier,
     channels: moduleRef.get<InMemoryChannelStore>(CHANNEL_STORE),
     media: moduleRef.get<InMemoryMediaStore>(MEDIA_STORE),
     storage: moduleRef.get<InMemoryStorageAdapter>(STORAGE_ADAPTER),
     scanner: moduleRef.get<InMemoryScannerAdapter>(VIRUS_SCANNER),
+    b2b: moduleRef.get<InMemoryB2bStore>(B2B_STORE),
     rateLimiter: moduleRef.get(AuthRateLimiter),
   };
   return harness;
@@ -95,19 +102,25 @@ export const resetHarness = async (): Promise<Harness> => {
   await h.audit.clear();
   await h.channels.clear();
   await h.media.clear();
+  await h.b2b.clear();
+  h.mailer.sent.length = 0;
   h.rateLimiter.clear();
   return h;
 };
 
 export const closeHarness = async (): Promise<void> => {
   if (harness) {
+    const h = harness;
+    harness = null;
     try {
-      const server = harness.app.getHttpServer();
+      const server = h.app.getHttpServer();
       if (server && typeof server.close === 'function') {
         server.close();
       }
-      await harness.app.close();
+      await Promise.race([
+        h.app.close(),
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]);
     } catch {}
-    harness = null;
   }
 };

@@ -16,13 +16,16 @@ export class InMemoryMessengerStore implements MessengerStorePort {
 
   async findConversationById(orgId: string, id: string): Promise<Conversation | null> {
     const conv = this.conversations.get(id);
-    if (!conv || conv.orgId !== orgId) return null;
+    if (!conv) return null;
+    const hasOrgAccess = conv.orgId === orgId || conv.participants.some((p) => p.orgId === orgId);
+    if (!hasOrgAccess) return null;
     return JSON.parse(JSON.stringify(conv));
   }
 
   async findDirectConversation(orgId: string, userA: string, userB: string): Promise<Conversation | null> {
     for (const conv of this.conversations.values()) {
-      if (conv.orgId === orgId && conv.type === 'dm') {
+      const hasOrgAccess = conv.orgId === orgId || conv.participants.some((p) => p.orgId === orgId);
+      if (hasOrgAccess && (conv.type === 'dm' || conv.type === 'b2b_direct')) {
         const participantIds = conv.participants.map((p) => p.userId);
         if (participantIds.includes(userA) && participantIds.includes(userB)) {
           return JSON.parse(JSON.stringify(conv));
@@ -35,10 +38,11 @@ export class InMemoryMessengerStore implements MessengerStorePort {
   async listConversationsForUser(orgId: string, userId: string): Promise<ConversationSummary[]> {
     const summaries: ConversationSummary[] = [];
     for (const conv of this.conversations.values()) {
-      if (conv.orgId === orgId && conv.participants.some((p) => p.userId === userId)) {
+      const hasOrgAccess = conv.orgId === orgId || conv.participants.some((p) => p.orgId === orgId);
+      if (hasOrgAccess && conv.participants.some((p) => p.userId === userId)) {
         const otherParticipant = conv.participants.find((p) => p.userId !== userId);
         const convMessages = Array.from(this.messages.values())
-          .filter((m) => m.conversationId === conv.id && m.orgId === orgId)
+          .filter((m) => m.conversationId === conv.id)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         const lastMsg = convMessages[0];

@@ -7,6 +7,7 @@ import { OrgModule } from './modules/org/org.module';
 import { MessengerModule } from './modules/messenger/messenger.module';
 import { ChannelsModule } from './modules/channels/channels.module';
 import { MediaModule } from './modules/media/media.module';
+import { B2bModule } from './modules/b2b/b2b.module';
 import { requestIdMiddleware } from './request-id';
 
 @Module({
@@ -16,6 +17,7 @@ import { requestIdMiddleware } from './request-id';
     MessengerModule,
     ChannelsModule.register(),
     MediaModule.register(),
+    B2bModule.register(),
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: AuthExceptionFilter }],

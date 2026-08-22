@@ -106,6 +106,39 @@ describe('Messenger Use Cases', () => {
         }),
       ).rejects.toThrow(MessengerError);
     });
+
+    it('allows cross-org B2B DM when organizations share an active connection', async () => {
+      const b2bDmUseCase = new GetOrCreateDmUseCase(store, clock, {
+        isMember: async (oId, uId) => oId === orgId && uId === rahimId,
+        findOrgsForUser: async (uId) => (uId === 'user-tanaka' ? ['org-tokyo-corp'] : []),
+        areOrgsConnected: async (oA, oB) => oA === orgId && oB === 'org-tokyo-corp',
+      });
+
+      const conv = await b2bDmUseCase.execute({
+        orgId,
+        requesterId: rahimId,
+        recipientId: 'user-tanaka',
+      });
+
+      expect(conv.type).toBe('b2b_direct');
+      expect(conv.participants[1].orgId).toBe('org-tokyo-corp');
+    });
+
+    it('rejects cross-tenant DM when organizations are not connected', async () => {
+      const b2bDmUseCase = new GetOrCreateDmUseCase(store, clock, {
+        isMember: async (oId, uId) => oId === orgId && uId === rahimId,
+        findOrgsForUser: async () => ['org-unconnected-corp'],
+        areOrgsConnected: async () => false,
+      });
+
+      await expect(
+        b2bDmUseCase.execute({
+          orgId,
+          requesterId: rahimId,
+          recipientId: 'user-stranger',
+        }),
+      ).rejects.toThrow('Recipient is not a member of this organization');
+    });
   });
 
   describe('SendDmUseCase & Real-time Delivery', () => {
