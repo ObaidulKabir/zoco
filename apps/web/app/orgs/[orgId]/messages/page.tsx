@@ -216,7 +216,7 @@ export default function MessagesPage() {
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {conversations.length === 0 ? (
             <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-              No direct messages yet. Click "+ New DM" to start communicating.
+              No direct messages yet. Click &quot;+ New DM&quot; to start communicating.
             </div>
           ) : (
             conversations.map((conv) => {
